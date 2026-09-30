@@ -1,0 +1,2254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FoodLoop — Smart Food Rescue</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<style>
+  :root{
+    --ink: #1E2B22;
+    --ink-soft: #4B5A4F;
+    --bg: #F6F8F2;
+    --surface: #FFFFFF;
+    --surface-2: #EFF3E9;
+    --line: #DCE3D6;
+    --basil: #3E6B4F;
+    --basil-dark: #2C4E39;
+    --basil-light: #E4EEE2;
+    --mango: #E08E45;
+    --mango-light: #FBEAD6;
+    --sky: #3E7C8C;
+    --sky-light: #E1EFF2;
+    --clay: #C1503D;
+    --clay-light: #F7E2DD;
+    --radius-s: 6px;
+    --radius-m: 12px;
+    --radius-l: 22px;
+    --shadow: none;
+    color-scheme: light;
+  }
+  :root:not([data-theme="light"])[data-theme="dark"],
+  :root[data-theme="dark"]{
+    --ink: #EAF0E6;
+    --ink-soft: #AEBDAB;
+    --bg: #131A15;
+    --surface: #1B241C;
+    --surface-2: #212B21;
+    --line: #303B2F;
+    --basil: #7BB893;
+    --basil-dark: #5E9A78;
+    --basil-light: #223228;
+    --mango: #F0A85E;
+    --mango-light: #33291A;
+    --sky: #7FC2D4;
+    --sky-light: #17282C;
+    --clay: #E28671;
+    --clay-light: #33201B;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ink: #EAF0E6;
+      --ink-soft: #AEBDAB;
+      --bg: #131A15;
+      --surface: #1B241C;
+      --surface-2: #212B21;
+      --line: #303B2F;
+      --basil: #7BB893;
+      --basil-dark: #5E9A78;
+      --basil-light: #223228;
+      --mango: #F0A85E;
+      --mango-light: #33291A;
+      --sky: #7FC2D4;
+      --sky-light: #17282C;
+      --clay: #E28671;
+      --clay-light: #33201B;
+    }
+  }
+
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Work Sans', -apple-system, sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+  h1,h2,h3,.display{
+    font-family:'Fraunces', Georgia, serif;
+    font-weight:600;
+    letter-spacing:-0.01em;
+    margin:0;
+  }
+  a{ color:inherit; }
+  button{ font-family:inherit; }
+  ::selection{ background:var(--basil-light); }
+  :focus-visible{ outline:2px solid var(--basil); outline-offset:2px; }
+
+  .app{
+    display:grid;
+    grid-template-columns:236px 1fr;
+    min-height:100vh;
+  }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar{
+    background:var(--basil-dark);
+    color:#EFF6EE;
+    padding:28px 16px 20px;
+    display:flex;
+    flex-direction:column;
+    position:sticky;
+    top:0;
+    height:100vh;
+    overflow-y:auto;
+  }
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:0 8px 26px;
+  }
+  .brand-mark{
+    width:34px; height:34px;
+    border-radius:50%;
+    background:var(--mango);
+    display:flex; align-items:center; justify-content:center;
+    font-size:18px;
+    flex:none;
+  }
+  .brand-name{
+    font-family:'Fraunces', serif;
+    font-size:20px;
+    font-weight:600;
+    color:#fff;
+  }
+  .brand-sub{
+    font-size:11px;
+    color:#CFE3D2;
+    margin-top:1px;
+  }
+  nav.navlist{
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+    margin-top:6px;
+  }
+  .navlink{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:11px 12px;
+    border-radius:999px;
+    color:#DCEBDD;
+    text-decoration:none;
+    font-size:14.5px;
+    font-weight:500;
+    cursor:pointer;
+    border:none;
+    background:transparent;
+    text-align:left;
+    width:100%;
+    transition:background .15s ease, color .15s ease;
+  }
+  .navlink:hover{ background:rgba(255,255,255,.08); color:#fff; }
+  .navlink.active{ background:#fff; color:var(--basil-dark); font-weight:600; }
+  .navlink .ic{ font-size:16px; width:20px; text-align:center; flex:none; }
+
+  .sidebar-foot{
+    margin-top:auto;
+    padding:14px 12px 4px;
+    border-top:1px solid rgba(255,255,255,.14);
+    font-size:11.5px;
+    color:#B9D3BC;
+    line-height:1.5;
+  }
+
+  /* ---------- Main ---------- */
+  main{ min-width:0; }
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:16px;
+    padding:22px 32px;
+    border-bottom:1px solid var(--line);
+    background:var(--bg);
+    position:sticky;
+    top:0;
+    z-index:5;
+  }
+  .topbar h1{ font-size:24px; }
+  .topbar .sub{ color:var(--ink-soft); font-size:13.5px; margin-top:3px; }
+  .topbar-right{ display:flex; align-items:center; gap:12px; flex:none; }
+  .pill{
+    display:inline-flex; align-items:center; gap:6px;
+    padding:6px 13px;
+    border-radius:999px;
+    font-size:12.5px;
+    font-weight:600;
+    background:var(--basil-light);
+    color:var(--basil-dark);
+    border:1px solid transparent;
+  }
+  .pill .dot{ width:7px; height:7px; border-radius:50%; background:var(--basil); }
+  .theme-toggle{
+    border:1px solid var(--line);
+    background:var(--surface);
+    color:var(--ink);
+    border-radius:999px;
+    padding:7px 12px;
+    font-size:13px;
+    cursor:pointer;
+  }
+
+  .page{ padding:26px 32px 60px; max-width:1180px; }
+  .page[hidden]{ display:none; }
+
+  /* ---------- shared building blocks ---------- */
+  .section-title{
+    font-size:15px;
+    text-transform:none;
+    color:var(--ink);
+    font-weight:600;
+    margin-bottom:2px;
+  }
+  .section-desc{ color:var(--ink-soft); font-size:13px; margin-bottom:14px; }
+
+  .panel{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius-m);
+    padding:20px;
+  }
+
+  .kpi-row{
+    display:grid;
+    grid-template-columns:1.3fr 1fr 1fr 1fr 1fr;
+    gap:14px;
+    margin-bottom:22px;
+  }
+  @media (max-width:980px){ .kpi-row{ grid-template-columns:1fr 1fr; } }
+
+  .kpi-hero{
+    grid-row:span 2;
+    background:var(--basil-dark);
+    color:#fff;
+    border-radius:var(--radius-l);
+    padding:24px;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+    position:relative;
+    overflow:hidden;
+  }
+  .kpi-hero .ring-wrap{ display:flex; align-items:center; gap:16px; margin-top:14px; }
+  .kpi-hero .ring-num{ font-family:'Fraunces',serif; font-size:40px; font-weight:600; }
+  .kpi-hero .ring-label{ font-size:12.5px; color:#CFE3D2; line-height:1.4; max-width:150px; }
+  .kpi-hero .foot{ font-size:12px; color:#BEDAC3; }
+
+  .kpi-card{
+    border-left:3px solid var(--k-color, var(--basil));
+    background:var(--surface);
+    border-top:1px solid var(--line);
+    border-right:1px solid var(--line);
+    border-bottom:1px solid var(--line);
+    border-radius:var(--radius-s);
+    padding:16px 16px 14px;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .kpi-card .label{ font-size:12px; color:var(--ink-soft); font-weight:500; }
+  .kpi-card .value{ font-family:'Fraunces',serif; font-size:26px; font-weight:600; }
+  .kpi-card .delta{ font-size:11.5px; font-weight:600; }
+  .delta.up{ color:var(--basil); }
+  .delta.down{ color:var(--clay); }
+
+  .grid-2{ display:grid; grid-template-columns:1.5fr 1fr; gap:16px; }
+  .grid-3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; }
+  @media (max-width:980px){ .grid-2, .grid-3{ grid-template-columns:1fr; } }
+
+  .list-row{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:11px 0;
+    border-bottom:1px solid var(--line);
+    font-size:13.5px;
+  }
+  .list-row:last-child{ border-bottom:none; }
+  .list-row .who{ font-weight:600; }
+  .list-row .meta{ color:var(--ink-soft); font-size:12px; }
+
+  table{ width:100%; border-collapse:collapse; font-size:13.5px; }
+  th{
+    text-align:left;
+    font-size:11.5px;
+    color:var(--ink-soft);
+    font-weight:600;
+    padding:0 10px 8px;
+    border-bottom:1px solid var(--line);
+  }
+  td{ padding:11px 10px; border-bottom:1px solid var(--line); vertical-align:middle; }
+  tr:last-child td{ border-bottom:none; }
+
+  .badge{
+    display:inline-flex; align-items:center; gap:5px;
+    padding:4px 10px;
+    border-radius:999px;
+    font-size:11.5px;
+    font-weight:600;
+  }
+  .badge.fresh{ background:var(--basil-light); color:var(--basil-dark); }
+  .badge.soon{ background:var(--mango-light); color:#8A5719; }
+  .badge.expiring{ background:var(--clay-light); color:var(--clay); }
+  .badge.done{ background:var(--sky-light); color:var(--sky); }
+
+  .btn{
+    border:1px solid var(--basil-dark);
+    background:var(--basil-dark);
+    color:#fff;
+    padding:9px 16px;
+    border-radius:999px;
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+  }
+  .btn:hover{ background:var(--basil); border-color:var(--basil); }
+  .btn.ghost{
+    background:transparent; color:var(--ink); border:1px solid var(--line);
+  }
+  .btn.ghost:hover{ border-color:var(--basil); color:var(--basil-dark); }
+  .btn.small{ padding:6px 12px; font-size:12px; }
+  .btn:disabled{ opacity:.45; cursor:not-allowed; }
+
+  select, input[type=text], input[type=number], input[type=datetime-local]{
+    border:1px solid var(--line);
+    background:var(--surface);
+    color:var(--ink);
+    padding:9px 12px;
+    border-radius:var(--radius-s);
+    font-size:13.5px;
+    font-family:inherit;
+  }
+  label.field{ display:flex; flex-direction:column; gap:6px; font-size:12.5px; color:var(--ink-soft); font-weight:500; }
+
+  .chart-box{ position:relative; height:230px; }
+  .chart-box.tall{ height:300px; }
+
+  /* Classification page */
+  .sample-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:12px; margin-bottom:18px; }
+  .sample-tile{
+    border:1px solid var(--line);
+    background:var(--surface);
+    border-radius:var(--radius-m);
+    padding:16px 10px;
+    text-align:center;
+    cursor:pointer;
+    transition:border-color .15s ease, transform .1s ease;
+  }
+  .sample-tile:hover{ border-color:var(--basil); }
+  .sample-tile.selected{ border-color:var(--basil-dark); background:var(--basil-light); }
+  .sample-tile .emoji{ font-size:32px; display:block; margin-bottom:8px; }
+  .sample-tile .name{ font-size:12px; font-weight:600; }
+
+  .confidence-row{ margin-bottom:10px; }
+  .confidence-row .top{ display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:4px; }
+  .confidence-track{ height:7px; border-radius:999px; background:var(--surface-2); overflow:hidden; }
+  .confidence-fill{ height:100%; border-radius:999px; background:var(--basil); }
+
+  .dropzone{
+    border:1.5px dashed var(--line);
+    border-radius:var(--radius-m);
+    padding:22px;
+    text-align:center;
+    font-size:13px;
+    color:var(--ink-soft);
+    cursor:pointer;
+  }
+  .dropzone:hover{ border-color:var(--basil); }
+  .preview-img{ max-width:120px; max-height:120px; border-radius:var(--radius-s); display:block; margin:0 auto 10px; object-fit:cover; }
+
+  /* Redistribution */
+  .partner-card{
+    border:1px solid var(--line);
+    border-radius:var(--radius-m);
+    padding:16px;
+    background:var(--surface);
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .partner-card .p-name{ font-weight:600; font-size:14.5px; }
+  .partner-card .p-meta{ font-size:12px; color:var(--ink-soft); }
+  .partner-card .p-tags{ display:flex; gap:6px; flex-wrap:wrap; margin-top:2px; }
+  .tag{ font-size:11px; background:var(--surface-2); padding:3px 9px; border-radius:999px; color:var(--ink-soft); }
+
+  .empty-state{
+    text-align:center;
+    padding:34px 16px;
+    color:var(--ink-soft);
+    font-size:13.5px;
+  }
+
+  .toast{
+    position:fixed;
+    bottom:22px; left:50%;
+    transform:translateX(-50%) translateY(10px);
+    background:var(--basil-dark);
+    color:#fff;
+    padding:11px 20px;
+    border-radius:999px;
+    font-size:13.5px;
+    font-weight:500;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .2s ease, transform .2s ease;
+    z-index:50;
+    box-shadow:0 8px 24px rgba(0,0,0,.18);
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); pointer-events:auto; }
+
+  .impact-strip{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:20px; }
+  .impact-card{ background:var(--surface-2); border-radius:var(--radius-m); padding:18px; }
+  .impact-card .num{ font-family:'Fraunces',serif; font-size:28px; font-weight:600; color:var(--basil-dark); }
+  .impact-card .lab{ font-size:12.5px; color:var(--ink-soft); margin-top:2px; }
+
+  .overflow-x{ overflow-x:auto; }
+
+  @media (max-width:820px){
+    .app{ grid-template-columns:1fr; }
+    .sidebar{ position:relative; height:auto; flex-direction:row; align-items:center; padding:14px 16px; overflow-x:auto; }
+    .brand{ padding:0 12px 0 0; }
+    nav.navlist{ flex-direction:row; margin-top:0; }
+    .sidebar-foot{ display:none; }
+    .topbar{ padding:16px 18px; flex-wrap:wrap; }
+    .page{ padding:18px; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ transition:none !important; animation:none !important; }
+  }
+
+  /* ---------- Double-tap rescue map ---------- */
+  .map-section{ margin-top:16px; }
+  .map-layout{ display:grid; grid-template-columns:minmax(0,1.7fr) minmax(280px,.8fr); gap:16px; }
+  .map-card{ padding:0; overflow:hidden; }
+  #foodRescueMap{ height:480px; width:100%; }
+  .map-toolbar{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 18px; border-bottom:1px solid var(--line); }
+  .map-hint{ color:var(--ink-soft); font-size:12px; line-height:1.45; }
+  .map-list{ max-height:480px; overflow:auto; padding:8px 14px; }
+  .map-pin-item{ display:flex; gap:10px; align-items:flex-start; padding:12px 4px; border-bottom:1px solid var(--line); cursor:pointer; }
+  .map-pin-item:last-child{ border-bottom:0; }
+  .map-pin-dot{ width:10px; height:10px; border-radius:50%; background:var(--mango); margin-top:5px; flex:none; box-shadow:0 0 0 4px var(--mango-light); }
+  .map-pin-title{ font-size:13px; font-weight:600; }
+  .map-pin-meta{ font-size:11.5px; color:var(--ink-soft); margin-top:3px; }
+  .leaflet-container{ font-family:'Work Sans',Arial,sans-serif; background:var(--surface-2); }
+  .leaflet-popup-content-wrapper,.leaflet-popup-tip{ background:var(--surface); color:var(--ink); }
+  .popup-form{ min-width:220px; font-family:'Work Sans',Arial,sans-serif; }
+  .popup-form label{ display:block; font-size:11.5px; color:var(--ink-soft); font-weight:600; margin:7px 0 4px; }
+  .popup-form input,.popup-form textarea{ width:100%; border:1px solid var(--line); background:var(--surface); color:var(--ink); border-radius:6px; padding:8px 9px; font:12px inherit; }
+  .popup-form textarea{ min-height:62px; resize:vertical; }
+  .popup-form button{ width:100%; border:0; background:var(--basil-dark); color:#fff; border-radius:999px; padding:8px 12px; margin-top:8px; font:600 12px 'Work Sans',sans-serif; cursor:pointer; }
+  .popup-form button:hover{ background:var(--basil); }
+  @media (max-width:980px){ .map-layout{ grid-template-columns:1fr; } #foodRescueMap{ height:400px; } }
+
+/* Offline map styling */
+.offline-map{position:relative;min-height:430px;overflow:hidden;background:#eef5ed;border:1px solid var(--line);border-radius:14px;isolation:isolate;}
+#offlineRescueMapSvg{display:block;width:100%;height:100%;min-height:430px;cursor:crosshair;transform-origin:center;transition:transform .2s ease;}
+#offlineRescueMapSvg .india-shape{fill:#dbead8;stroke:#2f563e;stroke-width:4;stroke-linejoin:round;}
+#offlineRescueMapSvg .india-detail{fill:none;stroke:#8cab92;stroke-width:2;stroke-dasharray:5 5;opacity:.8;}
+#offlineRescueMapSvg .neighbor-shape{fill:#e4eee2;stroke:#b7cbb9;stroke-width:2;}
+#offlineRescueMapSvg .offline-labels{font:600 13px 'Work Sans',sans-serif;letter-spacing:1.5px;fill:#78917d;}
+#offlineRescueMapSvg .india-label{font:700 34px 'Fraunces',serif;letter-spacing:4px;fill:#54735b;opacity:.72;}
+#offlineRescueMapSvg .map-note{font:500 13px 'Work Sans',sans-serif;fill:#718776;}
+.offline-map-controls{position:absolute;left:16px;top:16px;display:flex;flex-direction:column;z-index:5;border:1px solid var(--line);border-radius:10px;overflow:hidden;box-shadow:0 3px 12px rgba(31,49,37,.12);}
+.offline-map-controls button{width:38px;height:38px;border:0;border-bottom:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:22px;cursor:pointer;}
+.offline-map-controls button:last-child{border-bottom:0;}
+.offline-map-controls button:hover{background:var(--basil-light);}
+.offline-popup{position:absolute;z-index:10;width:270px;max-width:calc(100% - 24px);padding:14px;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 30px rgba(31,49,37,.18);}
+.offline-popup[hidden]{display:none;}
+
+/* India rescue map */
+#foodRescueMap{position:relative;min-height:560px;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#edf4ec;}
+#indiaRescueMap{width:100%;height:560px;background:radial-gradient(circle at 50% 45%,#f7faf5 0%,#eaf2e8 72%);cursor:crosshair;}
+.india-map-note{position:absolute;left:16px;bottom:14px;z-index:500;background:rgba(255,255,255,.92);padding:7px 10px;border:1px solid var(--line);border-radius:8px;font-size:11px;color:var(--ink-soft);pointer-events:none;}
+.india-state-label{background:transparent;border:0;box-shadow:none;color:var(--ink);font:600 9px 'Work Sans',sans-serif;text-align:center;white-space:nowrap;text-shadow:0 1px 2px #fff,0 -1px 2px #fff,1px 0 2px #fff,-1px 0 2px #fff;}
+.india-map-loading{display:flex;align-items:center;justify-content:center;height:100%;font:500 14px 'Work Sans',sans-serif;color:var(--ink-soft);}
+.route-map-toolbar{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px;}
+.route-map-toolbar .btn{padding:6px 11px;font-size:12px;}
+.route-steps{margin-top:16px;border-top:1px solid var(--line);padding-top:14px;}
+.route-steps-title{font-size:12px;font-weight:600;color:var(--ink);margin-bottom:8px;}
+.route-step{display:grid;grid-template-columns:26px 1fr auto;gap:8px;align-items:start;padding:8px 0;border-bottom:1px solid var(--line);font-size:11.5px;color:var(--ink-soft);}
+.route-step:last-child{border-bottom:0;}
+.route-step-num{width:22px;height:22px;border-radius:50%;background:var(--basil-light);color:var(--basil-dark);display:flex;align-items:center;justify-content:center;font-weight:700;}
+.route-step-dist{white-space:nowrap;color:var(--ink);font-weight:600;}
+.route-click-hint{font-size:11px;color:var(--ink-soft);margin-top:8px;line-height:1.45;}
+@media(max-width:900px){#foodRescueMap,#indiaRescueMap{min-height:420px;height:420px}}
+
+
+
+/* Accurate offline country-map styling */
+#offlineRescueMapSvg .india-shape{fill:#cfe7cf;stroke:#477653;stroke-width:2.2;}
+#offlineRescueMapSvg .india-outline{fill:none;stroke:#315f3e;stroke-width:2.5;}
+#offlineRescueMapSvg .neighbor-shape{fill:#e3ebe1;stroke:#aebdaf;stroke-width:1.1;}
+#offlineRescueMapSvg .city-label circle{fill:#547b5d;stroke:#fff;stroke-width:2;}
+#offlineRescueMapSvg .city-label text{font:600 12px 'Work Sans',sans-serif;fill:#385540;}
+#offlineRescueMapSvg .india-label{font:700 34px 'Fraunces',serif;letter-spacing:4px;fill:#477653;opacity:.68;}
+
+
+  /* ---------- Route Finder ---------- */
+  .route-preview-card{ margin-top:16px; }
+  .route-preview-head,.route-finder-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; }
+  .route-preview-grid{ display:grid; grid-template-columns:minmax(0,1.5fr) minmax(240px,.7fr); gap:14px; margin-top:14px; }
+  .route-preview-map{ min-height:210px; border:1px solid var(--line); border-radius:12px; overflow:hidden; background:var(--surface-2); position:relative; }
+  #routePreviewMap .leaflet-container{ height:210px; width:100%; }
+  .route-preview-empty{ min-height:210px; display:flex; align-items:center; justify-content:center; padding:25px; text-align:center; color:var(--ink-soft); font-size:12.5px; }
+  .route-preview-info{ border:1px solid var(--line); border-radius:12px; padding:18px; background:var(--surface-2); display:flex; flex-direction:column; justify-content:center; }
+  .route-mini-title{ font-family:'Fraunces',serif; font-size:20px; font-weight:600; }
+  .route-mini-text{ color:var(--ink-soft); font-size:12.5px; line-height:1.55; margin-top:7px; }
+  .route-finder-panel{ padding:20px; }
+  .route-form-grid{ display:grid; grid-template-columns:1fr 1fr auto auto; gap:12px; align-items:end; margin-top:18px; }
+  .route-status{ margin-top:12px; padding:10px 12px; border-radius:8px; background:var(--surface-2); color:var(--ink-soft); font-size:12px; }
+  .route-main-grid{ display:grid; grid-template-columns:minmax(0,1.8fr) minmax(260px,.7fr); gap:16px; margin-top:16px; }
+  .route-finder-map{ min-height:520px; height:520px; border:1px solid var(--line); border-radius:14px; overflow:hidden; background:var(--surface-2); }
+  .route-summary{ border:1px solid var(--line); border-radius:14px; padding:20px; background:var(--surface); display:flex; flex-direction:column; justify-content:center; min-height:260px; }
+  .route-summary-icon{ width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:var(--basil-light); color:var(--basil-dark); font-size:24px; margin-bottom:14px; }
+  .route-summary-title{ font-family:'Fraunces',serif; font-size:23px; font-weight:600; }
+  .route-summary-text{ color:var(--ink-soft); font-size:13px; line-height:1.55; margin-top:7px; }
+  .route-stats{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:18px; }
+  .route-stat{ background:var(--surface-2); border-radius:9px; padding:12px; }
+  .route-stat .v{ font-family:'Fraunces',serif; font-size:21px; font-weight:600; }
+  .route-stat .l{ color:var(--ink-soft); font-size:11px; margin-top:2px; }
+  .route-actions{ display:flex; flex-wrap:wrap; gap:8px; margin-top:18px; }
+  .manual-route-details{ margin-top:16px; border-top:1px solid var(--line); padding-top:14px; color:var(--ink-soft); font-size:12.5px; }
+  .manual-route-details summary{ cursor:pointer; font-weight:600; color:var(--ink); }
+  .manual-route-grid{ display:grid; grid-template-columns:repeat(4,1fr) auto; gap:10px; align-items:end; margin-top:12px; }
+  .route-marker-label{ background:var(--basil-dark); color:#fff; border:0; border-radius:999px; padding:4px 8px; font:600 11px 'Work Sans',sans-serif; box-shadow:0 2px 8px rgba(0,0,0,.18); }
+  @media(max-width:980px){ .route-form-grid,.manual-route-grid{ grid-template-columns:1fr 1fr; } .route-main-grid,.route-preview-grid{ grid-template-columns:1fr; } .route-finder-map{height:420px;min-height:420px;} }
+  @media(max-width:600px){ .route-form-grid,.manual-route-grid{ grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">♻️</div>
+      <div>
+        <div class="brand-name">FoodLoop</div>
+        <div class="brand-sub">Campus food rescue</div>
+      </div>
+    </div>
+    <nav class="navlist" id="navlist">
+      <button class="navlink" data-route="dashboard"><span class="ic">◧</span> Dashboard</button>
+      <button class="navlink" data-route="prediction"><span class="ic">◔</span> Demand Prediction</button>
+      <button class="navlink" data-route="monitoring"><span class="ic">◷</span> Leftover Monitoring</button>
+      <button class="navlink" data-route="classification"><span class="ic">◈</span> Food Classification</button>
+      <button class="navlink" data-route="redistribution"><span class="ic">↻</span> Redistribution</button>
+      <button class="navlink" data-route="route-finder"><span class="ic">⌖</span> Route Finder</button>
+      <button class="navlink" data-route="analytics"><span class="ic">◫</span> Analytics</button>
+    </nav>
+    <div class="sidebar-foot">
+      Prototype build · demo data<br>Mess Hall #2, Greenfield Institute of Technology, Pune
+    </div>
+  </aside>
+
+  <main>
+    <div class="topbar">
+      <div>
+        <h1 id="page-title">Dashboard</h1>
+        <div class="sub" id="page-sub">Today's food flow, at a glance</div>
+      </div>
+      <div class="topbar-right">
+        <span class="pill"><span class="dot"></span> Offline demo data</span>
+        <button class="theme-toggle" id="themeToggle">Dark mode</button>
+      </div>
+    </div>
+
+    <!-- ================= DASHBOARD ================= -->
+    <section class="page" id="page-dashboard">
+      <div class="kpi-row" id="kpiRow"></div>
+
+      <div class="panel map-section map-card">
+        <div class="map-toolbar">
+          <div>
+            <div class="section-title">Food Rescue Pin Map</div>
+            <div class="map-hint">Double-tap or double-click anywhere on the map to pin a pickup / rescue location, then add its purpose and details.</div>
+          </div>
+          <button class="btn ghost small" id="clearMapPins">Clear pins</button>
+        </div>
+        <div class="map-layout">
+          <div id="foodRescueMap" aria-label="India food rescue map">
+  <div id="indiaRescueMap"><div class="india-map-loading">Loading the exact India boundary…</div></div>
+  <div class="india-map-note">India • double-click / double-tap to pin a rescue location • drag and zoom to explore</div>
+</div>
+          <div>
+            <div class="section-title" style="padding:16px 16px 4px;">Saved locations</div>
+            <div class="map-list" id="mapPinList"><div class="empty-state">No locations pinned yet.</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel route-preview-card" id="routePreviewCard">
+        <div class="route-preview-head">
+          <div>
+            <div class="section-title">Route Finder</div>
+            <div class="section-desc" style="margin-bottom:0;">Plan a pickup route between saved FoodLoop rescue locations.</div>
+          </div>
+          <button class="btn small" type="button" onclick="navigate('route-finder')">Open full route finder →</button>
+        </div>
+        <div class="route-preview-grid">
+          <div class="route-preview-map" id="routePreviewMap">
+            <div class="route-preview-empty">Save at least two rescue locations to preview a route here.</div>
+          </div>
+          <div class="route-preview-info" id="routePreviewInfo">
+            <div class="route-mini-title">No route selected</div>
+            <div class="route-mini-text">The full route finder lets you choose pickup and drop-off points, calculate the road route, and open turn-by-turn navigation.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="panel">
+          <div class="section-title">7-day food flow</div>
+          <div class="section-desc">Prepared vs. consumed vs. leftover, in kilograms</div>
+          <div class="chart-box"><canvas id="chartTrend"></canvas></div>
+        </div>
+        <div class="panel">
+          <div class="section-title">Recent activity</div>
+          <div class="section-desc">Latest redistribution &amp; monitoring events</div>
+          <div id="activityFeed"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= PREDICTION ================= -->
+    <section class="page" id="page-prediction" hidden>
+      <div class="grid-2">
+        <div class="panel">
+          <div class="section-title">Tomorrow's conditions</div>
+          <div class="section-desc">Adjust the factors the model weighs, then regenerate</div>
+          <div style="display:flex; flex-direction:column; gap:14px; max-width:340px;">
+            <label class="field">Day type
+              <select id="predDayType">
+                <option value="weekday">Weekday</option>
+                <option value="weekend">Weekend</option>
+              </select>
+            </label>
+            <label class="field">Campus event
+              <select id="predEvent">
+                <option value="none">None scheduled</option>
+                <option value="sports">Sports fixture</option>
+                <option value="exam">Exam week</option>
+                <option value="holiday">Holiday / long weekend</option>
+              </select>
+            </label>
+            <label class="field">Weather forecast
+              <select id="predWeather">
+                <option value="normal">Normal</option>
+                <option value="rain">Rain</option>
+                <option value="heat">Heat wave</option>
+              </select>
+            </label>
+            <button class="btn" id="predRunBtn">Generate forecast</button>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="section-title">Model confidence</div>
+          <div class="section-desc">Based on 6 weeks of dining hall history</div>
+          <div id="predConfidenceBlock" style="margin-top:8px;"></div>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:16px;">
+        <div class="section-title">Predicted demand by category</div>
+        <div class="section-desc">Recommended prep quantity for tomorrow's service</div>
+        <div class="grid-2">
+          <div class="chart-box tall"><canvas id="chartPrediction"></canvas></div>
+          <div style="display:flex; flex-direction:column;">
+            <div class="overflow-x">
+              <table>
+                <thead><tr><th>Category</th><th>Predicted</th><th>Vs. yesterday</th></tr></thead>
+                <tbody id="predTableBody"></tbody>
+              </table>
+            </div>
+            <div style="margin-top:auto; padding-top:14px; border-top:1px solid var(--line); font-size:11.5px; color:var(--ink-soft); line-height:1.5;">
+              <strong>Prototype forecast, not a production AI model.</strong> Numbers are generated from simple rule-based multipliers on demo data for this hackathon build — they don't come from a trained model or real dining-hall history.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= MONITORING ================= -->
+    <section class="page" id="page-monitoring" hidden>
+      <div class="panel" style="margin-bottom:16px;">
+        <div class="section-title">Record a leftover batch</div>
+        <div class="section-desc">Kitchen staff log surplus food here — it's saved to the database and appears in the table below immediately</div>
+        <form id="leftoverForm" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px;">
+          <label class="field">Food name
+            <input type="text" id="lfItem" required maxlength="120" placeholder="e.g. Vegetable Biryani">
+          </label>
+          <label class="field">Category
+            <input type="text" id="lfCategory" list="lfCategoryOptions" required maxlength="60" placeholder="e.g. Rice & Grains">
+            <datalist id="lfCategoryOptions">
+              <option value="Rice & Grains">
+              <option value="Curries & Gravies">
+              <option value="Breads">
+              <option value="Salads">
+              <option value="Desserts">
+              <option value="Beverages">
+            </datalist>
+          </label>
+          <label class="field">Quantity (kg)
+            <input type="number" id="lfQty" min="0.1" step="0.1" required placeholder="e.g. 8">
+          </label>
+          <label class="field">Preparation time
+            <input type="datetime-local" id="lfPreparedAt" required>
+          </label>
+          <label class="field">Recorded leftover time
+            <input type="datetime-local" id="lfRecordedAt">
+          </label>
+          <label class="field">Shelf / handling window (hours)
+            <input type="number" id="lfShelfHours" min="0.5" step="0.5" required placeholder="e.g. 6">
+          </label>
+          <label class="field" style="grid-column:1 / -1;">Notes (optional)
+            <input type="text" id="lfNotes" maxlength="500" placeholder="Any handling notes...">
+          </label>
+          <div style="grid-column:1 / -1; display:flex; justify-content:flex-end; align-items:center; gap:10px;">
+            <span class="meta" id="lfFormError" style="color:var(--clay); font-size:12.5px;"></span>
+            <button type="submit" class="btn" id="lfSubmitBtn">Record batch</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="panel">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
+          <div>
+            <div class="section-title">Leftover batches</div>
+            <div class="section-desc">Freshness windows update automatically as time passes</div>
+          </div>
+          <label class="field" style="min-width:170px;">Filter
+            <select id="monFilter">
+              <option value="all">All statuses</option>
+              <option value="fresh">Fresh</option>
+              <option value="soon">Use soon</option>
+              <option value="expiring">Expiring</option>
+              <option value="done">Redistributed</option>
+            </select>
+          </label>
+        </div>
+        <div class="overflow-x" style="margin-top:10px;">
+          <table>
+            <thead>
+              <tr><th>Batch</th><th>Item</th><th>Quantity</th><th>Prepared</th><th>Time left</th><th>Status</th></tr>
+            </thead>
+            <tbody id="monTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= CLASSIFICATION ================= -->
+    <section class="page" id="page-classification" hidden>
+      <div class="panel">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:2px; flex-wrap:wrap;">
+          <div class="section-title" style="margin-bottom:0;">Pick a sample tray</div>
+          <span class="pill" style="background:var(--mango-light); color:#8A5719;">Prototype classifier · demo only</span>
+        </div>
+        <div class="section-desc">Simulates a camera capture from the dish-return line</div>
+        <div class="sample-grid" id="sampleGrid"></div>
+        <div class="dropzone" id="dropzone">
+          <div>Or upload your own photo — a preset demo result will be shown, no real image analysis happens</div>
+          <input type="file" id="fileInput" accept="image/*" style="display:none;">
+        </div>
+        <p style="font-size:11.5px; color:var(--ink-soft); margin:12px 2px 0; line-height:1.5;">
+          This is a hackathon prototype: uploaded photos are never sent anywhere or analyzed by an AI model. Results shown are pre-written demo outputs, matched deterministically from your file so the same photo always gives the same result.
+        </p>
+      </div>
+
+      <div class="panel" style="margin-top:16px;" id="classificationResultPanel" hidden>
+        <div class="section-title">Classification result <span style="font-weight:400; color:var(--ink-soft); font-size:12px;">(demo output)</span></div>
+        <div class="grid-2" id="classificationResultBody"></div>
+      </div>
+    </section>
+
+    <!-- ================= REDISTRIBUTION ================= -->
+    <section class="page" id="page-redistribution" hidden>
+      <div class="grid-2">
+        <div class="panel">
+          <div class="section-title">Available for pickup</div>
+          <div class="section-desc">Leftover batches still fit for donation</div>
+          <div class="overflow-x">
+            <table>
+              <thead><tr><th>Item</th><th>Qty</th><th>Status</th><th>Assign to</th><th></th></tr></thead>
+              <tbody id="redistAvailableBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="section-title">Redistribution partners</div>
+          <div class="section-desc">Verified pickup partners near campus</div>
+          <div style="display:flex; flex-direction:column; gap:10px;" id="partnerList"></div>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:16px;">
+        <div class="section-title">Redistribution log</div>
+        <div class="section-desc">Most recent handoffs, newest first</div>
+        <div id="redistLog"></div>
+      </div>
+    </section>
+
+    <!-- ================= ROUTE FINDER ================= -->
+    <section class="page" id="page-route-finder" hidden>
+      <div class="panel route-finder-panel">
+        <div class="route-finder-head">
+          <div>
+            <div class="section-title">FoodLoop Route Finder</div>
+            <div class="section-desc">Choose two saved rescue locations, calculate a road route, then open navigation in Google Maps.</div>
+          </div>
+          <span class="pill"><span class="dot"></span> Road route preview</span>
+        </div>
+        <div class="route-form-grid">
+          <label class="field">Start / pickup
+            <select id="routeStart"></select>
+          </label>
+          <label class="field">Destination / drop-off
+            <select id="routeEnd"></select>
+          </label>
+          <button class="btn" id="calculateRouteBtn" type="button">Calculate route</button>
+          <button class="btn ghost" id="routeMyLocationBtn" type="button">Use my location</button>
+        </div>
+        <div class="route-status" id="routeStatus">Add two pins from the dashboard map, or use the manual coordinate option below.</div>
+        <div class="route-main-grid">
+          <div>
+            <div id="routeFinderMap" class="route-finder-map"></div>
+            <div class="route-map-toolbar">
+              <button class="btn ghost" id="routePickStartBtn" type="button">Pick start on map</button>
+              <button class="btn ghost" id="routePickEndBtn" type="button">Pick destination on map</button>
+              <button class="btn ghost" id="routeSwapBtn" type="button">Swap</button>
+              <button class="btn ghost" id="routeFitIndiaBtn" type="button">Fit India</button>
+            </div>
+            <div class="route-click-hint">Tip: choose saved locations above, or use the map buttons to place pickup and destination directly on the map.</div>
+          </div>
+          <aside class="route-summary" id="routeSummary">
+            <div class="route-summary-icon">⌖</div>
+            <div class="route-summary-title">Ready for a route</div>
+            <div class="route-summary-text">Your route distance and estimated driving time will appear here.</div>
+            <div class="route-actions">
+              <button class="btn" id="openGoogleMapsBtn" type="button" disabled>Open navigation ↗</button>
+              <button class="btn ghost" id="clearRouteBtn" type="button">Clear route</button>
+            </div>
+          </aside>
+        </div>
+        <details class="manual-route-details">
+          <summary>Use coordinates instead</summary>
+          <div class="manual-route-grid">
+            <label class="field">Start latitude <input id="manualStartLat" type="number" step="any" placeholder="28.6139"></label>
+            <label class="field">Start longitude <input id="manualStartLng" type="number" step="any" placeholder="77.2090"></label>
+            <label class="field">End latitude <input id="manualEndLat" type="number" step="any" placeholder="19.0760"></label>
+            <label class="field">End longitude <input id="manualEndLng" type="number" step="any" placeholder="72.8777"></label>
+            <button class="btn small" id="manualRouteBtn" type="button">Route coordinates</button>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <!-- ================= ANALYTICS ================= -->
+    <section class="page" id="page-analytics" hidden>
+      <div class="impact-strip" id="impactStrip"></div>
+      <div class="grid-2">
+        <div class="panel">
+          <div class="section-title">Waste reduction, last 6 months</div>
+          <div class="section-desc">Share of leftover food successfully redistributed</div>
+          <div class="chart-box"><canvas id="chartMonthly"></canvas></div>
+        </div>
+        <div class="panel">
+          <div class="section-title">Leftover by category</div>
+          <div class="section-desc">Where most surplus comes from this month</div>
+          <div class="chart-box"><canvas id="chartCategory"></canvas></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(function(){
+"use strict";
+
+/* ============================================================
+   IN-BROWSER "BACKEND"
+   ============================================================
+   This reproduces the original Flask + SQLite backend's data and
+   route logic entirely in JavaScript, in memory, so the app works
+   as a single static file with no server. Behaviour (seed data,
+   freshness math, prediction formula, classification lookup,
+   analytics) mirrors app.py exactly. Data resets on page reload
+   (there is no database).
+*/
+const DAY_TYPE_MULTIPLIER = { weekday: 1.0, weekend: 0.82 };
+const EVENT_MULTIPLIER = { none: 1.0, sports: 1.28, exam: 0.85, holiday: 0.6 };
+const WEATHER_MULTIPLIER = { normal: 1.0, rain: 1.12, heat: 0.93 };
+const REDISTRIBUTED_BASELINE_KG = 32;
+
+const CLASSIFY_SAMPLES = {
+  s1: { name: "Fresh biryani tray", emoji: "🍛", label: "Vegetable Biryani", freshness: "fresh",
+        confidence: [["Vegetable Biryani", 94], ["Fried Rice", 4], ["Pulao", 2]] },
+  s2: { name: "Wilted salad bowl", emoji: "🥗", label: "Mixed Green Salad", freshness: "soon",
+        confidence: [["Mixed Green Salad", 88], ["Coleslaw", 8], ["Fruit Salad", 4]] },
+  s3: { name: "Bread basket", emoji: "🍞", label: "Dinner Rolls", freshness: "fresh",
+        confidence: [["Dinner Rolls", 91], ["Garlic Bread", 6], ["Bagels", 3]] },
+  s4: { name: "Curry with mold spots", emoji: "🍲", label: "Paneer Curry (spoiled)", freshness: "spoiled",
+        confidence: [["Paneer Butter Masala", 77], ["Mold detected", 97], ["Spoilage risk", 95]] },
+  s5: { name: "Dessert cups", emoji: "🍮", label: "Rice Pudding", freshness: "soon",
+        confidence: [["Rice Pudding", 85], ["Custard", 9], ["Yogurt", 6]] },
+  s6: { name: "Fruit platter", emoji: "🍎", label: "Fresh Fruit Cup", freshness: "fresh",
+        confidence: [["Fruit Cup", 96], ["Fruit Salad", 3], ["Dessert", 1]] },
+};
+const CLASSIFY_SAMPLE_ORDER = ["s1", "s2", "s3", "s4", "s5", "s6"];
+
+const ACTION_MAP = { fresh: "Redistribute", soon: "Redistribute now", spoiled: "Compost — not fit for donation" };
+const FRESH_BADGE = { fresh: "fresh", soon: "soon", spoiled: "expiring" };
+const FRESH_LABEL = {
+  fresh: "Fresh — safe to donate",
+  soon: "Use soon — donate within the hour",
+  spoiled: "Spoilage detected",
+};
+
+function hoursAgo(h){ return new Date(Date.now() - h * 3600000); }
+function round(n, d){ const m = Math.pow(10, d||0); return Math.round(n * m) / m; }
+
+// ---- seed data (mirrors seed_if_empty in app.py) ----
+const todaySummary = { prepared: 480, consumed: 388, redistributed_baseline: REDISTRIBUTED_BASELINE_KG };
+
+let foodBatches = [
+  ["B-104", "Vegetable Biryani", "Rice & Grains", 14, 1.2, 6],
+  ["B-105", "Paneer Butter Masala", "Curries & Gravies", 9, 2.5, 5],
+  ["B-106", "Mixed Green Salad", "Salads", 5, 3.8, 4],
+  ["B-107", "Dinner Rolls", "Breads", 11, 0.6, 10],
+  ["B-108", "Rice Pudding", "Desserts", 6, 4.6, 5],
+  ["B-109", "Lentil Soup", "Curries & Gravies", 8, 5.5, 6],
+  ["B-110", "Fruit Cup", "Desserts", 7, 0.3, 8],
+].map(([id, item, category, qty, hrs, shelf]) => {
+  const preparedAt = hoursAgo(hrs);
+  return { id, item, category, qty, prepared_at: preparedAt, shelf_hours: shelf,
+           status: "active", recorded_at: preparedAt, notes: null };
+});
+
+const partners = [
+  { id: "P1", name: "Demo NGO Partner 1", distance_km: 1.4, capacity_desc: "Up to 40 kg/day", tags: ["Hot meals", "Same-day pickup"] },
+  { id: "P2", name: "Demo Community Kitchen", distance_km: 2.1, capacity_desc: "Up to 25 kg/day", tags: ["Refrigerated van"] },
+  { id: "P3", name: "Demo Food Bank", distance_km: 3.0, capacity_desc: "Up to 60 kg/day", tags: ["Bulk pickup", "Evenings"] },
+  { id: "P4", name: "Demo NGO Partner 2", distance_km: 4.6, capacity_desc: "Up to 15 kg/day", tags: ["Cooked food only"] },
+];
+
+let redistRecordSeq = 1;
+let redistributionRecords = [
+  ["Vegetable Pulao", 12, "P1", "Demo NGO Partner 1", 20],
+  ["Chickpea Curry", 8, "P3", "Demo Food Bank", 28],
+  ["Bread Rolls", 10, "P2", "Demo Community Kitchen", 44],
+].map(([item, qty, pid, pname, hrs]) => ({
+  id: redistRecordSeq++, batch_id: null, item, qty, partner_id: pid, partner_name: pname,
+  created_at: hoursAgo(hrs),
+}));
+
+const dailyDemandHistory = [
+  { day_label: "Mon", prepared: 452, consumed: 379, leftover: 73 },
+  { day_label: "Tue", prepared: 468, consumed: 392, leftover: 76 },
+  { day_label: "Wed", prepared: 441, consumed: 365, leftover: 76 },
+  { day_label: "Thu", prepared: 475, consumed: 398, leftover: 77 },
+  { day_label: "Fri", prepared: 502, consumed: 410, leftover: 92 },
+  { day_label: "Sat", prepared: 388, consumed: 329, leftover: 59 },
+  { day_label: "Sun", prepared: 480, consumed: 388, leftover: 92 },
+];
+
+const monthlyImpactHistory = [
+  { month_label: "Apr", pct_redistributed: 52 },
+  { month_label: "May", pct_redistributed: 58 },
+  { month_label: "Jun", pct_redistributed: 61 },
+  { month_label: "Jul", pct_redistributed: 65 },
+  { month_label: "Aug", pct_redistributed: 71 },
+  { month_label: "Sep", pct_redistributed: 76 },
+];
+
+const categoryBreakdown = [
+  { category: "Rice & Grains", kg: 31 },
+  { category: "Curries & Gravies", kg: 24 },
+  { category: "Breads", kg: 14 },
+  { category: "Salads", kg: 9 },
+  { category: "Desserts", kg: 12 },
+];
+
+const demandPredictionBase = [
+  { category: "Rice & Grains", base_qty: 120 },
+  { category: "Curries & Gravies", base_qty: 95 },
+  { category: "Breads", base_qty: 60 },
+  { category: "Salads", base_qty: 40 },
+  { category: "Desserts", base_qty: 35 },
+  { category: "Beverages", base_qty: 70 },
+];
+
+// ---- domain helpers (mirror app.py) ----
+function freshnessInfo(status, preparedAt, shelfHours){
+  if(status === "redistributed") return { pct: 0, label: "Redistributed", cls: "done", remaining_hours: 0 };
+  const elapsedH = (Date.now() - preparedAt.getTime()) / 3600000;
+  const remaining = Math.max(0, shelfHours - elapsedH);
+  const pct = shelfHours ? Math.max(0, Math.min(1, remaining / shelfHours)) : 0;
+  let label, cls;
+  if(pct <= 0){ label = "Expired"; cls = "expiring"; }
+  else if(pct < 0.25){ label = "Expiring soon"; cls = "expiring"; }
+  else if(pct < 0.55){ label = "Use soon"; cls = "soon"; }
+  else { label = "Fresh"; cls = "fresh"; }
+  return { pct, label, cls, remaining_hours: remaining };
+}
+
+function batchToDict(row){
+  const info = freshnessInfo(row.status, row.prepared_at, row.shelf_hours);
+  const preparedHoursAgo = (Date.now() - row.prepared_at.getTime()) / 3600000;
+  return {
+    id: row.id, item: row.item, category: row.category, qty: row.qty,
+    prepared_hours_ago: round(preparedHoursAgo, 1), shelf_hours: row.shelf_hours,
+    status: row.status, notes: row.notes || "",
+    freshness: {
+      pct: round(info.pct, 3), label: info.label, cls: info.cls,
+      remaining_hours: round(info.remaining_hours, 2),
+      time_left_text: row.status === "redistributed" ? "—" : timeLeftText(info.remaining_hours),
+    },
+  };
+}
+
+function partnerToDict(row){
+  return { id: row.id, name: row.name, distance_km: row.distance_km,
+           dist: `${row.distance_km} km`, capacity: row.capacity_desc, tags: row.tags };
+}
+
+function relTime(ts){
+  const h = (Date.now() - ts.getTime()) / 3600000;
+  if(h < 1) return `${Math.round(h * 60)}m ago`;
+  if(h < 24) return `${Math.round(h)}h ago`;
+  return `${Math.round(h / 24)}d ago`;
+}
+
+function nextBatchId(){
+  let maxNum = 100;
+  for(const b of foodBatches){
+    const m = /^B-(\d+)$/.exec(b.id);
+    if(m) maxNum = Math.max(maxNum, parseInt(m[1], 10));
+  }
+  return `B-${maxNum + 1}`;
+}
+
+function parseFlexibleDatetime(value){
+  if(typeof value !== "string" || !value.trim()) return null;
+  const d = new Date(value.trim().replace(" ", "T"));
+  return isNaN(d.getTime()) ? null : d;
+}
+
+// ---- "routes" (mirror app.py endpoints) ----
+function apiDashboard(){
+  const prepared = todaySummary.prepared, consumed = todaySummary.consumed;
+  const totalLeftover = prepared - consumed;
+  const redistActiveKg = foodBatches.filter(b => b.status === "redistributed").reduce((s, b) => s + b.qty, 0);
+  const currentRedistributedToday = redistActiveKg + todaySummary.redistributed_baseline;
+  const redistributedToday = totalLeftover > 0 ? Math.min(currentRedistributedToday, totalLeftover) : 0;
+  const wasteReducedPct = totalLeftover > 0 ? Math.round((redistributedToday / totalLeftover) * 100) : 0;
+  const redistributedBatchCount = foodBatches.filter(b => b.status === "redistributed").length;
+
+  const trend = dailyDemandHistory.map(r => ({ day: r.day_label, prepared: r.prepared, consumed: r.consumed, leftover: r.leftover }));
+
+  let events = redistributionRecords
+    .slice().sort((a, b) => b.created_at - a.created_at).slice(0, 3)
+    .map(r => ({ text: `${r.qty} kg ${r.item} sent to ${r.partner_name}`, when: r.created_at }));
+
+  let soonest = null, soonestRemaining = null;
+  for(const b of foodBatches.filter(b => b.status === "active")){
+    const info = freshnessInfo("active", b.prepared_at, b.shelf_hours);
+    if((info.cls === "soon" || info.cls === "expiring") && (soonestRemaining === null || info.remaining_hours < soonestRemaining)){
+      soonest = b; soonestRemaining = info.remaining_hours;
+    }
+  }
+  if(soonest) events.push({ text: `Batch ${soonest.id} flagged "use soon" by monitoring`, when: new Date() });
+
+  events.sort((a, b) => b.when - a.when);
+  events = events.slice(0, 5);
+  const activity_feed = events.map(e => ({ text: e.text, when: e.when, rel: relTime(e.when) }));
+
+  return {
+    today: { prepared, consumed },
+    kpis: {
+      prepared, consumed,
+      consumed_pct_of_prepared: prepared ? Math.round((consumed / prepared) * 100) : 0,
+      total_leftover: totalLeftover,
+      leftover_pct_of_prepared: prepared ? Math.round((totalLeftover / prepared) * 100) : 0,
+      redistributed_today: redistributedToday,
+      redistributed_pct_of_leftover: totalLeftover ? Math.round((redistributedToday / totalLeftover) * 100) : 0,
+      redistributed_batch_count: redistributedBatchCount,
+      waste_reduced_pct: wasteReducedPct,
+    },
+    trend, activity_feed,
+  };
+}
+
+function apiLeftovers(statusFilter){
+  const validFilters = new Set(["all", "fresh", "soon", "expiring", "done", "active"]);
+  if(!validFilters.has(statusFilter)) throw new Error(`invalid status filter '${statusFilter}'`);
+  let batches = foodBatches.slice().sort((a, b) => b.prepared_at - a.prepared_at).map(batchToDict);
+  if(statusFilter === "active") batches = batches.filter(b => b.status === "active");
+  else if(statusFilter === "done") batches = batches.filter(b => b.status === "redistributed");
+  else if(statusFilter !== "all") batches = batches.filter(b => b.freshness.cls === statusFilter && b.status !== "redistributed");
+  return { batches };
+}
+
+function apiLeftoversCreate(data){
+  const item = (data.item || "").trim();
+  const category = (data.category || "").trim();
+  const notes = (data.notes || "").trim() || null;
+  const errors = [];
+
+  if(!item) errors.push("food name (item) is required");
+  else if(item.length > 120) errors.push("food name must be 120 characters or fewer");
+
+  if(!category) errors.push("category is required");
+  else if(category.length > 60) errors.push("category must be 60 characters or fewer");
+
+  let qty = parseFloat(data.qty);
+  if(isNaN(qty)) errors.push("qty is required and must be a number");
+  else if(qty <= 0) errors.push("qty must be a positive number of kilograms");
+
+  let shelfHours = parseFloat(data.shelf_hours);
+  if(isNaN(shelfHours)) errors.push("shelf_hours (shelf/handling window) is required and must be a number");
+  else if(shelfHours <= 0) errors.push("shelf_hours must be a positive number");
+
+  const preparedDt = parseFlexibleDatetime(data.prepared_at);
+  if(preparedDt === null) errors.push("prepared_at is required and must be a valid date/time");
+
+  let recordedDt = null;
+  if(data.recorded_at){
+    recordedDt = parseFlexibleDatetime(data.recorded_at);
+    if(recordedDt === null) errors.push("recorded_at must be a valid date/time if provided");
+  }
+
+  if(notes !== null && notes.length > 500) errors.push("notes must be 500 characters or fewer");
+  if(preparedDt !== null && recordedDt !== null && recordedDt < preparedDt) errors.push("recorded_at cannot be earlier than prepared_at");
+
+  if(errors.length) throw new Error(errors.join("; "));
+  if(recordedDt === null) recordedDt = new Date();
+
+  const id = nextBatchId();
+  const row = { id, item, category, qty, prepared_at: preparedDt, shelf_hours: shelfHours,
+                status: "active", recorded_at: recordedDt, notes };
+  foodBatches.push(row);
+  todaySummary.prepared += qty;
+
+  return { success: true, batch: batchToDict(row) };
+}
+
+function apiPartners(){
+  return { partners: partners.slice().sort((a, b) => a.distance_km - b.distance_km).map(partnerToDict) };
+}
+
+function apiRedistributionLog(){
+  const log = redistributionRecords.slice().sort((a, b) => b.created_at - a.created_at).slice(0, 25)
+    .map(r => ({ item: r.item, qty: r.qty, partner: r.partner_name, when: r.created_at, rel: relTime(r.created_at) }));
+  return { log };
+}
+
+function apiRedistribute(data){
+  const batchId = data.batch_id, partnerId = data.partner_id;
+  if(!batchId || typeof batchId !== "string") throw new Error("batch_id is required");
+  if(!partnerId || typeof partnerId !== "string") throw new Error("partner_id is required");
+
+  const batch = foodBatches.find(b => b.id === batchId);
+  if(!batch) throw new Error(`no batch with id '${batchId}'`);
+  if(batch.status === "redistributed") throw new Error(`batch '${batchId}' has already been redistributed`);
+
+  const partner = partners.find(p => p.id === partnerId);
+  if(!partner) throw new Error(`no partner with id '${partnerId}'`);
+
+  const createdAt = new Date();
+  batch.status = "redistributed";
+  redistributionRecords.push({
+    id: redistRecordSeq++, batch_id: batchId, item: batch.item, qty: batch.qty,
+    partner_id: partnerId, partner_name: partner.name, created_at: createdAt,
+  });
+
+  return {
+    success: true, batch: batchToDict(batch),
+    log_entry: { item: batch.item, qty: batch.qty, partner: partner.name, when: createdAt, rel: relTime(createdAt) },
+  };
+}
+
+function apiPredict(data){
+  const dayType = data.day_type || "weekday", event = data.event || "none", weather = data.weather || "normal";
+  if(!(dayType in DAY_TYPE_MULTIPLIER)) throw new Error(`invalid day_type '${dayType}'`);
+  if(!(event in EVENT_MULTIPLIER)) throw new Error(`invalid event '${event}'`);
+  if(!(weather in WEATHER_MULTIPLIER)) throw new Error(`invalid weather '${weather}'`);
+
+  const mult = DAY_TYPE_MULTIPLIER[dayType] * EVENT_MULTIPLIER[event] * WEATHER_MULTIPLIER[weather];
+  const rows = demandPredictionBase.map((r, i) => {
+    const variance = 1 + Math.sin(i * 13 + mult * 7) * 0.06;
+    const predicted = Math.round(r.base_qty * mult * variance);
+    const diff_pct = Math.round(((predicted - r.base_qty) / r.base_qty) * 100);
+    return { category: r.category, predicted, diff_pct };
+  });
+  const confidence = Math.round(78 - Math.abs(mult - 1) * 22);
+
+  return {
+    rows, confidence, inputs: { day_type: dayType, event, weather },
+    model_type: "rule_based_prototype",
+    disclaimer: "Prototype forecast, not a production AI model. Numbers come from simple rule-based multipliers on demo baseline data for this hackathon build — they are not produced by a trained model or real dining-hall history.",
+  };
+}
+
+function buildClassificationResult(sampleKey){
+  const sample = CLASSIFY_SAMPLES[sampleKey];
+  const freshness = sample.freshness;
+  return {
+    sample_id: sampleKey, name: sample.name, emoji: sample.emoji, label: sample.label,
+    freshness, freshness_badge: FRESH_BADGE[freshness], freshness_label: FRESH_LABEL[freshness],
+    recommended_action: ACTION_MAP[freshness], confidence: sample.confidence,
+    is_prototype: true, model_type: "rule_based_demo_lookup",
+    disclaimer: "This is a hackathon prototype. No real image analysis or trained ML model is used — results are pre-written demo outputs looked up deterministically.",
+  };
+}
+
+function apiClassify(data){
+  const sampleId = data.sample_id, filename = data.filename;
+  let filesize = data.filesize;
+  if(sampleId != null){
+    if(!(sampleId in CLASSIFY_SAMPLES)) throw new Error(`unknown sample_id '${sampleId}'`);
+    return buildClassificationResult(sampleId);
+  }
+  if(filename != null){
+    if(typeof filename !== "string" || !filename) throw new Error("filename must be a non-empty string");
+    filesize = filesize != null ? parseInt(filesize, 10) : 0;
+    if(isNaN(filesize)) throw new Error("filesize must be a number");
+    const seed = (filename.length * 31 + filesize) % CLASSIFY_SAMPLE_ORDER.length;
+    return buildClassificationResult(CLASSIFY_SAMPLE_ORDER[seed]);
+  }
+  throw new Error("provide either sample_id or filename (+ optional filesize)");
+}
+
+function apiClassifySamples(){
+  return { samples: CLASSIFY_SAMPLE_ORDER.map(key => ({ id: key, name: CLASSIFY_SAMPLES[key].name, emoji: CLASSIFY_SAMPLES[key].emoji })) };
+}
+
+function apiAnalytics(){
+  const recordsTotal = redistributionRecords.reduce((s, r) => s + r.qty, 0);
+  const baseline = todaySummary.redistributed_baseline;
+  const totalRedistributedKg = recordsTotal + baseline;
+  const meals_saved = Math.round(totalRedistributedKg / 0.45);
+  const co2_saved_kg = Math.round(totalRedistributedKg * 2.5);
+  const value_saved_inr = Math.round(totalRedistributedKg * 90);
+
+  return {
+    impact: { total_redistributed_kg: totalRedistributedKg, meals_saved, co2_saved_kg, value_saved_inr },
+    monthly: monthlyImpactHistory.map(r => ({ month: r.month_label, pct: r.pct_redistributed })),
+    category_breakdown: categoryBreakdown.slice().sort((a, b) => b.kg - a.kg).map(r => ({ category: r.category, kg: r.kg })),
+  };
+}
+
+
+/* ============================================================
+   API HELPER
+   ============================================================
+   Every piece of app data (batches, partners, predictions,
+   analytics, classification results) now comes from the Flask
+   backend below instead of a hard-coded / localStorage object.
+   Only the theme preference (light/dark) stays client-side —
+   it's a UI setting, not application data.
+*/
+async function api(path, options){
+  const [pathname, queryString] = path.split('?');
+  const params = new URLSearchParams(queryString || '');
+  const method = (options && options.method) || 'GET';
+  let body = {};
+  if(options && options.body){
+    try{ body = JSON.parse(options.body); }catch(e){ body = {}; }
+  }
+  try{
+    let data;
+    if(method === 'GET' && pathname === '/api/dashboard') data = apiDashboard();
+    else if(method === 'GET' && pathname === '/api/leftovers') data = apiLeftovers(params.get('status') || 'all');
+    else if(method === 'POST' && pathname === '/api/leftovers') data = apiLeftoversCreate(body);
+    else if(method === 'GET' && pathname === '/api/partners') data = apiPartners();
+    else if(method === 'GET' && pathname === '/api/redistribution-log') data = apiRedistributionLog();
+    else if(method === 'POST' && pathname === '/api/redistribute') data = apiRedistribute(body);
+    else if(method === 'POST' && pathname === '/api/predict') data = apiPredict(body);
+    else if(method === 'POST' && pathname === '/api/classify') data = apiClassify(body);
+    else if(method === 'GET' && pathname === '/api/classify/samples') data = apiClassifySamples();
+    else if(method === 'GET' && pathname === '/api/analytics') data = apiAnalytics();
+    else throw new Error(`Request to ${path} failed (404)`);
+    return data;
+  }catch(err){
+    const msg = (err && err.message) ? err.message : `Request to ${path} failed`;
+    toast(msg);
+    throw new Error(msg);
+  }
+}
+function apiGet(path){ return api(path); }
+function apiPost(path, body){
+  return api(path, {
+    method:'POST',
+    headers:{ 'Content-Type':'application/json' },
+    body: JSON.stringify(body||{})
+  });
+}
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+function fmt(n, d){ return Number(n).toLocaleString(undefined, {maximumFractionDigits: d==null?0:d}); }
+function fmtINR(n){ return '₹' + Number(n).toLocaleString('en-IN', {maximumFractionDigits:0}); }
+
+function toast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(()=> el.classList.remove('show'), 2400);
+}
+
+function timeLeftText(remainingHours){
+  if(remainingHours <= 0) return 'Expired';
+  const h = Math.floor(remainingHours);
+  const m = Math.round((remainingHours - h) * 60);
+  if(h <= 0) return m + 'm left';
+  return h + 'h ' + m + 'm left';
+}
+
+/* ============================================================
+   ROUTER
+   ============================================================ */
+const ROUTES = {
+  dashboard:    { title:'Dashboard', sub:"Today's food flow, at a glance" },
+  prediction:   { title:'Food Demand Prediction', sub:'Forecast tomorrow\u2019s prep quantities' },
+  monitoring:   { title:'Leftover Food Monitoring', sub:'Live freshness tracking on current batches' },
+  classification:{ title:'Food Classification', sub:'AI classification demo — sorting edible vs. spoiled trays (prototype)' },
+  redistribution:{ title:'Redistribution', sub:'Route surplus food to verified partners' },
+  'route-finder':{ title:'FoodLoop Route Finder', sub:'Preview a road route and open turn-by-turn navigation' },
+  analytics:    { title:'Analytics', sub:'Longer-term impact of the rescue program' }
+};
+
+function navigate(route){
+  if(!ROUTES[route]) route = 'dashboard';
+  document.querySelectorAll('.page').forEach(p => p.hidden = true);
+  document.getElementById('page-'+route).hidden = false;
+  document.querySelectorAll('.navlink').forEach(b => b.classList.toggle('active', b.dataset.route === route));
+  document.getElementById('page-title').textContent = ROUTES[route].title;
+  document.getElementById('page-sub').textContent = ROUTES[route].sub;
+  location.hash = route;
+  renderRoute(route);
+}
+
+function renderRoute(route){
+  if(route === 'dashboard') renderDashboard();
+  if(route === 'prediction') renderPrediction();
+  if(route === 'monitoring') renderMonitoring();
+  if(route === 'classification') renderClassification();
+  if(route === 'redistribution') renderRedistribution();
+  if(route === 'route-finder') renderRouteFinder();
+  if(route === 'analytics') renderAnalytics();
+}
+
+document.getElementById('navlist').addEventListener('click', (e)=>{
+  const btn = e.target.closest('.navlink');
+  if(btn) navigate(btn.dataset.route);
+});
+
+/* ============================================================
+   THEME (client-side UI preference only — not app data)
+   ============================================================ */
+const themeToggle = document.getElementById('themeToggle');
+function applyTheme(t){
+  document.documentElement.setAttribute('data-theme', t);
+  themeToggle.textContent = t === 'dark' ? 'Light mode' : 'Dark mode';
+  try{ localStorage.setItem('foodloop_theme', t); }catch(e){}
+}
+(function initTheme(){
+  let t = 'light';
+  try{ t = localStorage.getItem('foodloop_theme') || 'light'; }catch(e){}
+  applyTheme(t);
+})();
+themeToggle.addEventListener('click', ()=>{
+  const cur = document.documentElement.getAttribute('data-theme');
+  applyTheme(cur === 'dark' ? 'light' : 'dark');
+});
+
+/* ============================================================
+   CHARTS registry (destroy before re-create to survive re-render)
+   ============================================================ */
+const charts = {};
+function makeChart(id, config){
+  const ctx = document.getElementById(id);
+  if(!ctx) return;
+  if(typeof Chart === 'undefined'){
+    ctx.replaceWith(Object.assign(document.createElement('div'), {
+      className: 'empty-state',
+      textContent: 'Chart library failed to load (no internet access to the CDN). The rest of the dashboard still works.'
+    }));
+    return;
+  }
+  if(charts[id]) charts[id].destroy();
+  charts[id] = new Chart(ctx, config);
+}
+const CHART_FONT = { family: "'Work Sans', sans-serif", size: 11 };
+function cssVar(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+/* ============================================================
+   DASHBOARD
+   ============================================================ */
+async function renderDashboard(){
+  let data;
+  try{ data = await apiGet('/api/dashboard'); }catch(e){ return; }
+
+  const k = data.kpis;
+  const kpiRow = document.getElementById('kpiRow');
+  kpiRow.innerHTML = `
+    <div class="kpi-hero">
+      <div>
+        <div class="foot">WASTE REDUCED TODAY</div>
+        <div class="ring-wrap">
+          <div class="ring-num">${k.waste_reduced_pct}%</div>
+          <div class="ring-label">of today's leftover food was redistributed instead of thrown away</div>
+        </div>
+      </div>
+      <div class="foot">vs. 68% same day last week</div>
+    </div>
+    <div class="kpi-card" style="--k-color:${'var(--basil)'}">
+      <div class="label">Food prepared</div>
+      <div class="value">${fmt(k.prepared)} kg</div>
+      <div class="delta up">↑ 4% vs. yesterday</div>
+    </div>
+    <div class="kpi-card" style="--k-color:${'var(--sky)'}">
+      <div class="label">Food consumed</div>
+      <div class="value">${fmt(k.consumed)} kg</div>
+      <div class="delta up">${k.consumed_pct_of_prepared}% of prepared</div>
+    </div>
+    <div class="kpi-card" style="--k-color:${'var(--mango)'}">
+      <div class="label">Food leftover</div>
+      <div class="value">${fmt(k.total_leftover)} kg</div>
+      <div class="delta down">${k.leftover_pct_of_prepared}% of prepared</div>
+    </div>
+    <div class="kpi-card" style="--k-color:${'var(--basil)'}">
+      <div class="label">Food redistributed</div>
+      <div class="value">${fmt(k.redistributed_today)} kg</div>
+      <div class="delta up">${k.redistributed_batch_count} batches today · ${k.redistributed_pct_of_leftover}% of leftover</div>
+    </div>
+  `;
+
+  const t = data.trend;
+  makeChart('chartTrend', {
+    type:'bar',
+    data:{
+      labels: t.map(d=>d.day),
+      datasets:[
+        { label:'Prepared', data:t.map(d=>d.prepared), backgroundColor: cssVar('--basil-light'), borderRadius:5, order:3 },
+        { label:'Consumed', data:t.map(d=>d.consumed), backgroundColor: cssVar('--sky'), borderRadius:5, order:2 },
+        { label:'Leftover', data:t.map(d=>d.leftover), backgroundColor: cssVar('--mango'), borderRadius:5, order:1, type:'line', borderColor: cssVar('--clay'), tension:.35, pointRadius:3, yAxisID:'y' }
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ position:'bottom', labels:{ font:CHART_FONT, color: cssVar('--ink-soft'), boxWidth:10, usePointStyle:true } } },
+      scales:{
+        x:{ grid:{ display:false }, ticks:{ font:CHART_FONT, color: cssVar('--ink-soft') } },
+        y:{ grid:{ color: cssVar('--line') }, ticks:{ font:CHART_FONT, color: cssVar('--ink-soft') } }
+      }
+    }
+  });
+
+  const feed = document.getElementById('activityFeed');
+  feed.innerHTML = data.activity_feed.length ? data.activity_feed.map(e => `
+    <div class="list-row">
+      <span class="who">${e.text}</span>
+      <span class="meta">${e.rel}</span>
+    </div>
+  `).join('') : `<div class="empty-state">No activity yet today.</div>`;
+}
+
+/* ============================================================
+   PREDICTION (backend does the calculation — see /api/predict)
+   ============================================================ */
+async function runPrediction(){
+  const dayType = document.getElementById('predDayType').value;
+  const event = document.getElementById('predEvent').value;
+  const weather = document.getElementById('predWeather').value;
+
+  let data;
+  try{
+    data = await apiPost('/api/predict', { day_type: dayType, event, weather });
+  }catch(e){ return; }
+  renderPredictionResult(data);
+}
+
+function renderPredictionResult(p){
+  document.getElementById('predDayType').value = p.inputs.day_type;
+  document.getElementById('predEvent').value = p.inputs.event;
+  document.getElementById('predWeather').value = p.inputs.weather;
+
+  document.getElementById('predConfidenceBlock').innerHTML = `
+    <div class="confidence-row">
+      <div class="top"><span>Overall model confidence</span><span>${p.confidence}%</span></div>
+      <div class="confidence-track"><div class="confidence-fill" style="width:${p.confidence}%"></div></div>
+    </div>
+    <p style="font-size:12.5px; color:var(--ink-soft); line-height:1.6; margin-top:10px;">
+      Confidence reflects how often past forecasts under similar conditions
+      (day type, campus events, weather) landed within 10% of actual demand.
+      Unusual combinations — like a holiday during exam week — lower confidence.
+    </p>
+  `;
+
+  const tbody = document.getElementById('predTableBody');
+  tbody.innerHTML = p.rows.map(r => `
+    <tr>
+      <td>${r.category}</td>
+      <td>${fmt(r.predicted)} kg</td>
+      <td style="color:${r.diff_pct>=0 ? 'var(--basil)':'var(--clay)'}">${r.diff_pct>=0?'+':''}${r.diff_pct}%</td>
+    </tr>
+  `).join('');
+
+  makeChart('chartPrediction', {
+    type:'bar',
+    data:{
+      labels: p.rows.map(r=>r.category),
+      datasets:[{ label:'Predicted kg', data:p.rows.map(r=>r.predicted), backgroundColor: cssVar('--basil'), borderRadius:6 }]
+    },
+    options:{
+      indexAxis:'y',
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display:false } },
+      scales:{
+        x:{ grid:{ color: cssVar('--line') }, ticks:{ font:CHART_FONT, color: cssVar('--ink-soft') } },
+        y:{ grid:{ display:false }, ticks:{ font:CHART_FONT, color: cssVar('--ink-soft') } }
+      }
+    }
+  });
+}
+
+async function renderPrediction(){
+  // Load with whatever is currently selected in the dropdowns (defaults to
+  // weekday / none / normal on first visit, matching the original demo).
+  await runPrediction();
+}
+
+document.getElementById('predRunBtn').addEventListener('click', async ()=>{
+  await runPrediction();
+  toast('Forecast regenerated for tomorrow');
+});
+
+/* ============================================================
+   MONITORING — leftover recording form
+   ============================================================
+   Kitchen staff use this form to log a new leftover batch. It POSTs to
+   /api/leftovers, which writes it to SQLite; the table below is then
+   re-fetched so the new batch shows up immediately (no localStorage,
+   no client-only state).
+*/
+function datetimeLocalNow(offsetMinutes){
+  const d = new Date(Date.now() - (offsetMinutes||0) * 60000);
+  const pad = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function resetLeftoverForm(){
+  const form = document.getElementById('leftoverForm');
+  form.reset();
+  document.getElementById('lfPreparedAt').value = datetimeLocalNow(0);
+  document.getElementById('lfRecordedAt').value = datetimeLocalNow(0);
+  document.getElementById('lfFormError').textContent = '';
+}
+
+function initLeftoverForm(){
+  const form = document.getElementById('leftoverForm');
+  if(form.dataset.initialized) return;
+  form.dataset.initialized = '1';
+
+  resetLeftoverForm();
+
+  form.addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const errorEl = document.getElementById('lfFormError');
+    errorEl.textContent = '';
+
+    const payload = {
+      item: document.getElementById('lfItem').value.trim(),
+      category: document.getElementById('lfCategory').value.trim(),
+      qty: document.getElementById('lfQty').value,
+      prepared_at: document.getElementById('lfPreparedAt').value,
+      recorded_at: document.getElementById('lfRecordedAt').value,
+      shelf_hours: document.getElementById('lfShelfHours').value,
+      notes: document.getElementById('lfNotes').value.trim()
+    };
+
+    const submitBtn = document.getElementById('lfSubmitBtn');
+    submitBtn.disabled = true;
+    let result;
+    try{
+      result = await api('/api/leftovers', {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify(payload)
+      });
+    }catch(err){
+      errorEl.textContent = err.message || 'Could not save this batch.';
+      submitBtn.disabled = false;
+      return;
+    }
+    submitBtn.disabled = false;
+
+    toast(`${result.batch.qty} kg ${result.batch.item} recorded as batch ${result.batch.id}`);
+    resetLeftoverForm();
+
+    // Refresh every view that could now be affected by the new batch.
+    await renderMonitoring();
+    if(!document.getElementById('page-dashboard').hidden) await renderDashboard();
+    if(!document.getElementById('page-redistribution').hidden) await renderRedistribution();
+    if(!document.getElementById('page-analytics').hidden) await renderAnalytics();
+  });
+}
+
+/* ============================================================
+   MONITORING
+   ============================================================ */
+async function renderMonitoring(){
+  initLeftoverForm();
+  const filter = document.getElementById('monFilter').value;
+  const tbody = document.getElementById('monTableBody');
+
+  let data;
+  try{ data = await apiGet(`/api/leftovers?status=${encodeURIComponent(filter)}`); }catch(e){ return; }
+  const rows = data.batches;
+
+  if(rows.length === 0){
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state">No batches match this filter right now.</div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = rows.map(b=>{
+    const f = b.freshness;
+    return `
+      <tr>
+        <td>${b.id}</td>
+        <td${b.notes ? ` title="${b.notes.replace(/"/g,'&quot;')}"` : ''}>${b.item}<br><span class="meta" style="color:var(--ink-soft); font-size:11.5px;">${b.category}</span></td>
+        <td>${b.qty} kg</td>
+        <td>${b.prepared_hours_ago}h ago</td>
+        <td>${b.status==='redistributed' ? '—' : f.time_left_text}</td>
+        <td><span class="badge ${f.cls}">${f.label}</span></td>
+      </tr>
+    `;
+  }).join('');
+}
+document.getElementById('monFilter').addEventListener('change', renderMonitoring);
+setInterval(()=>{
+  if(!document.getElementById('page-monitoring').hidden) renderMonitoring();
+  if(!document.getElementById('page-dashboard').hidden) renderDashboard();
+}, 30000);
+
+/* ============================================================
+   CLASSIFICATION
+   ============================================================
+   Tile metadata (id/name/emoji) is purely presentational and comes from
+   /api/classify/samples. The actual "classification" result (label,
+   freshness, confidence scores) always comes from POST /api/classify,
+   which is a clearly-labelled rule-based/lookup PROTOTYPE — see the
+   disclaimer rendered below and in app.py. No real ML model is involved.
+*/
+async function renderClassification(){
+  const grid = document.getElementById('sampleGrid');
+  if(grid.childElementCount === 0){
+    let data;
+    try{ data = await apiGet('/api/classify/samples'); }catch(e){ return; }
+    grid.innerHTML = data.samples.map(s => `
+      <div class="sample-tile" data-id="${s.id}">
+        <span class="emoji">${s.emoji}</span>
+        <span class="name">${s.name}</span>
+      </div>
+    `).join('');
+    grid.addEventListener('click', (e)=>{
+      const tile = e.target.closest('.sample-tile');
+      if(!tile) return;
+      document.querySelectorAll('.sample-tile').forEach(t=>t.classList.remove('selected'));
+      tile.classList.add('selected');
+      classifyBySampleId(tile.dataset.id, null);
+    });
+  }
+}
+
+function showClassifyLoading(){
+  const panel = document.getElementById('classificationResultPanel');
+  const body = document.getElementById('classificationResultBody');
+  panel.hidden = false;
+  body.innerHTML = `<div class="empty-state">Loading demo classification result…</div>`;
+}
+
+function renderClassifyResult(result, customImgUrl){
+  const body = document.getElementById('classificationResultBody');
+  const actionColorMap = { fresh:'var(--basil)', soon:'var(--mango)', spoiled:'var(--clay)' };
+  const actionColor = actionColorMap[result.freshness];
+
+  body.innerHTML = `
+    <div>
+      ${customImgUrl ? `<img class="preview-img" src="${customImgUrl}" alt="">` : `<div style="font-size:64px; text-align:center; margin-bottom:12px;">${result.emoji}</div>`}
+      <div style="text-align:center;">
+        <span class="badge ${result.freshness_badge}">${result.freshness_label}</span>
+      </div>
+      <div style="text-align:center; margin-top:12px;">
+        <div style="font-size:12px; color:var(--ink-soft);">Recommended action</div>
+        <div style="font-family:'Fraunces',serif; font-weight:600; font-size:18px; color:${actionColor};">${result.recommended_action}</div>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:12px; color:var(--ink-soft); margin-bottom:10px;">Classifier confidence</div>
+      ${result.confidence.map(([label,pct]) => `
+        <div class="confidence-row">
+          <div class="top"><span>${label}</span><span>${pct}%</span></div>
+          <div class="confidence-track"><div class="confidence-fill" style="width:${pct}%; background:${pct>50?'var(--basil)':'var(--mango)'}"></div></div>
+        </div>
+      `).join('')}
+      <p style="font-size:11px; color:var(--ink-soft); margin-top:14px; line-height:1.5;">${result.disclaimer}</p>
+    </div>
+  `;
+}
+
+async function classifyBySampleId(sampleId, customImgUrl){
+  showClassifyLoading();
+  let result;
+  try{ result = await apiPost('/api/classify', { sample_id: sampleId }); }catch(e){ return; }
+  renderClassifyResult(result, customImgUrl);
+}
+
+async function classifyByUpload(filename, filesize, customImgUrl){
+  showClassifyLoading();
+  let result;
+  try{ result = await apiPost('/api/classify', { filename, filesize }); }catch(e){ return; }
+  renderClassifyResult(result, customImgUrl);
+}
+
+document.getElementById('dropzone').addEventListener('click', ()=> document.getElementById('fileInput').click());
+document.getElementById('fileInput').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev)=>{
+    document.querySelectorAll('.sample-tile').forEach(t=>t.classList.remove('selected'));
+    // Preview image stays entirely client-side (never uploaded or analyzed).
+    // The backend picks a deterministic demo result from filename + size.
+    classifyByUpload(file.name, file.size, ev.target.result);
+  };
+  reader.readAsDataURL(file);
+});
+
+/* ============================================================
+   REDISTRIBUTION
+   ============================================================ */
+async function renderRedistribution(){
+  let leftoverData, partnerData, logData;
+  try{
+    [leftoverData, partnerData, logData] = await Promise.all([
+      apiGet('/api/leftovers?status=active'),
+      apiGet('/api/partners'),
+      apiGet('/api/redistribution-log')
+    ]);
+  }catch(e){ return; }
+
+  const active = leftoverData.batches;
+  const partners = partnerData.partners;
+
+  const tbody = document.getElementById('redistAvailableBody');
+  if(active.length === 0){
+    tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state">No leftover batches waiting on a pickup right now.</div></td></tr>`;
+  } else {
+    tbody.innerHTML = active.map(b=>{
+      const f = b.freshness;
+      return `
+        <tr>
+          <td>${b.item}<br><span class="meta" style="color:var(--ink-soft); font-size:11.5px;">${b.category}</span></td>
+          <td>${b.qty} kg</td>
+          <td><span class="badge ${f.cls}">${f.label}</span></td>
+          <td>
+            <select data-partner-for="${b.id}" style="width:100%;">
+              ${partners.map(p=>`<option value="${p.id}">${p.name}</option>`).join('')}
+            </select>
+          </td>
+          <td><button class="btn small" data-assign="${b.id}">Assign</button></td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  const plist = document.getElementById('partnerList');
+  plist.innerHTML = partners.map(p => `
+    <div class="partner-card">
+      <div class="p-name">${p.name}</div>
+      <div class="p-meta">${p.dist} away · ${p.capacity}</div>
+      <div class="p-tags">${p.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+    </div>
+  `).join('');
+
+  const log = document.getElementById('redistLog');
+  log.innerHTML = logData.log.length ? logData.log.map(l => `
+    <div class="list-row">
+      <span class="who">${l.qty} kg ${l.item} → ${l.partner}</span>
+      <span class="meta">${l.rel}</span>
+    </div>
+  `).join('') : `<div class="empty-state">No redistribution activity yet today.</div>`;
+}
+
+document.getElementById('redistAvailableBody').addEventListener('click', async (e)=>{
+  const btn = e.target.closest('[data-assign]');
+  if(!btn) return;
+  const batchId = btn.dataset.assign;
+  const select = document.querySelector(`[data-partner-for="${batchId}"]`);
+  const partnerId = select.value;
+
+  btn.disabled = true;
+  let result;
+  try{
+    result = await apiPost('/api/redistribute', { batch_id: batchId, partner_id: partnerId });
+  }catch(err){
+    btn.disabled = false;
+    return;
+  }
+
+  toast(`${result.log_entry.qty} kg ${result.log_entry.item} assigned to ${result.log_entry.partner}`);
+  await renderRedistribution();
+  await renderDashboard();
+  if(!document.getElementById('page-monitoring').hidden) await renderMonitoring();
+  if(!document.getElementById('page-analytics').hidden) await renderAnalytics();
+});
+
+/* ============================================================
+   ANALYTICS
+   ============================================================ */
+async function renderAnalytics(){
+  let data;
+  try{ data = await apiGet('/api/analytics'); }catch(e){ return; }
+
+  const impact = data.impact;
+  document.getElementById('impactStrip').innerHTML = `
+    <div class="impact-card">
+      <div class="num">${fmt(impact.meals_saved)}</div>
+      <div class="lab">meals provided to the community</div>
+    </div>
+    <div class="impact-card">
+      <div class="num">${fmt(impact.co2_saved_kg)} kg</div>
+      <div class="lab">CO₂e emissions avoided</div>
+    </div>
+    <div class="impact-card">
+      <div class="num">${fmtINR(impact.value_saved_inr)}</div>
+      <div class="lab">value of food rescued this period</div>
+    </div>
+  `;
+
+  const m = data.monthly;
+  makeChart('chartMonthly', {
+    type:'line',
+    data:{
+      labels: m.map(x=>x.month),
+      datasets:[{ label:'% redistributed', data:m.map(x=>x.pct), borderColor: cssVar('--basil'), backgroundColor: cssVar('--basil-light'), fill:true, tension:.4, pointRadius:4, pointBackgroundColor: cssVar('--basil') }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display:false } },
+      scales:{
+        x:{ grid:{ display:false }, ticks:{ font:CHART_FONT, color: cssVar('--ink-soft') } },
+        y:{ min:0, max:100, grid:{ color: cssVar('--line') }, ticks:{ font:CHART_FONT, color: cssVar('--ink-soft'), callback:v=>v+'%' } }
+      }
+    }
+  });
+
+  const c = data.category_breakdown;
+  makeChart('chartCategory', {
+    type:'doughnut',
+    data:{
+      labels: c.map(x=>x.category),
+      datasets:[{ data:c.map(x=>x.kg), backgroundColor:[cssVar('--basil'), cssVar('--mango'), cssVar('--sky'), cssVar('--clay'), cssVar('--basil-dark')], borderWidth:0 }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ position:'bottom', labels:{ font:CHART_FONT, color: cssVar('--ink-soft'), boxWidth:10, usePointStyle:true, padding:12 } } }
+    }
+  });
+}
+
+
+/* ============================================================
+   INDIA FOOD RESCUE MAP
+   ============================================================ */
+let rescueMap = null;
+let rescueMarkers = [];
+let rescuePins = [];
+let rescuePinSeq = 1;
+let indiaGeoLayer = null;
+let indiaLoaded = false;
+
+const INDIA_GEOJSON_URL = 'https://raw.githubusercontent.com/datameet/maps/master/Country/india-land-simplified.geojson';
+const INDIA_CENTER = [22.9734, 78.6569];
+const INDIA_ZOOM = 5;
+
+function escapeMapHtml(value){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+function rescuePopupHtml(id, lat, lng){
+  return `<div class="popup-form" style="min-width:230px;">
+    <div style="font-family:'Fraunces',serif;font-size:18px;font-weight:600;margin-bottom:10px;">Pin food rescue location</div>
+    <label>Purpose</label>
+    <input id="map-purpose-${id}" type="text" maxlength="100" placeholder="e.g. Food pickup">
+    <label>Details</label>
+    <textarea id="map-details-${id}" maxlength="500" placeholder="Enter location or handling details"></textarea>
+    <div style="font-size:11px;color:var(--ink-soft);margin:8px 0;">Coordinates: ${lat.toFixed(5)}, ${lng.toFixed(5)}</div>
+    <button type="button" onclick="saveRescuePin(${id},${lat},${lng})">Save location</button>
+  </div>`;
+}
+
+function initRescueMap(){
+  if(rescueMap) return;
+  const el=document.getElementById('indiaRescueMap');
+  if(!el || !window.L) return;
+  rescueMap=L.map(el,{zoomControl:true,attributionControl:false,doubleClickZoom:false,preferCanvas:true}).setView(INDIA_CENTER,INDIA_ZOOM);
+  rescueMap.getContainer().style.fontFamily="'Work Sans',Arial,sans-serif";
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    maxZoom:19,
+    attribution:'© OpenStreetMap contributors'
+  }).addTo(rescueMap);
+  L.control.attribution({prefix:'',position:'bottomright'}).addAttribution('India boundary: DataMeet India maps · © OpenStreetMap');
+
+  rescueMap.on('dblclick',e=>{
+    const lat=Number(e.latlng.lat.toFixed(5)), lng=Number(e.latlng.lng.toFixed(5));
+    const id=rescuePinSeq++;
+    const marker=L.marker([lat,lng]).addTo(rescueMap);
+    marker.bindPopup(rescuePopupHtml(id,lat,lng),{maxWidth:320}).openPopup();
+    rescueMarkers.push({id,marker,lat,lng});
+  });
+
+  const loading=el.querySelector('.india-map-loading');
+  fetch(INDIA_GEOJSON_URL)
+    .then(r=>{if(!r.ok) throw new Error('Could not load India geometry'); return r.json();})
+    .then(data=>{
+      indiaGeoLayer=L.geoJSON(data,{
+        style:()=>({color:'#3f704c',weight:1.5,fillColor:'#d9ead7',fillOpacity:.35})
+      }).addTo(rescueMap);
+      indiaLoaded=true;
+      if(loading) loading.remove();
+      rescueMap.fitBounds(indiaGeoLayer.getBounds(),{padding:[18,18]});
+      setTimeout(()=>rescueMap.invalidateSize(),80);
+    })
+    .catch(err=>{
+      if(loading) loading.innerHTML='India boundary overlay could not load. The interactive map is still available.';
+      console.error(err);
+    });
+
+  document.getElementById('clearMapPins')?.addEventListener('click',clearRescuePins);
+  renderRescuePinList();
+}
+
+window.saveRescuePin=function(id,lat,lng){
+  const purpose=(document.getElementById(`map-purpose-${id}`)?.value||'').trim()||'Food rescue location';
+  const details=(document.getElementById(`map-details-${id}`)?.value||'').trim()||'No additional details';
+  const entry={id,lat,lng,purpose,details};
+  rescuePins=rescuePins.filter(p=>p.id!==id); rescuePins.push(entry);
+  const ref=rescueMarkers.find(x=>x.id===id);
+  if(ref){
+    ref.marker.bindPopup(`<div class="popup-form"><div style="font-family:'Fraunces',serif;font-size:17px;font-weight:600;">${escapeMapHtml(purpose)}</div><div style="margin-top:6px;color:var(--ink-soft);font-size:12px;line-height:1.5;">${escapeMapHtml(details)}</div><div style="margin-top:8px;font-size:11px;color:var(--ink-soft);">${lat.toFixed(5)}, ${lng.toFixed(5)}</div></div>`,{maxWidth:300}).openPopup();
+  }
+  renderRescuePinList();
+  renderRoutePreview();
+  if(typeof toast==='function') toast('Location saved to the India rescue map');
+};
+
+function renderRescuePinList(){
+  const list=document.getElementById('mapPinList'); if(!list) return;
+  if(!rescuePins.length){list.innerHTML='<div class="empty-state">No locations pinned yet.</div>';return;}
+  list.innerHTML=rescuePins.slice().reverse().map(p=>`<div class="map-pin-item" data-map-pin="${p.id}"><span class="map-pin-dot"></span><div><div class="map-pin-title">${escapeMapHtml(p.purpose)}</div><div class="map-pin-meta">${escapeMapHtml(p.details)}</div><div class="map-pin-meta">${p.lat}, ${p.lng}</div></div></div>`).join('');
+  list.querySelectorAll('[data-map-pin]').forEach(el=>el.addEventListener('click',()=>{
+    const p=rescuePins.find(x=>x.id===Number(el.dataset.mapPin));
+    const ref=rescueMarkers.find(x=>x.id===p?.id);
+    if(p && ref){rescueMap.setView([p.lat,p.lng],Math.max(rescueMap.getZoom(),9),{animate:true});ref.marker.openPopup();}
+  }));
+}
+
+function clearRescuePins(){
+  rescueMarkers.forEach(x=>x.marker.remove());
+  rescueMarkers=[]; rescuePins=[]; rescuePinSeq=1; renderRescuePinList(); renderRoutePreview();
+}
+
+/* ============================================================
+   FOODLOOP ROUTE FINDER
+   OpenStreetMap tiles + OSRM road routing with saved pins,
+   map-picked points, browser location, route steps and controls.
+   ============================================================ */
+let routeFinderMap = null;
+let routePreviewMap = null;
+let routeLayer = null;
+let routePreviewLayer = null;
+let routeStartMarker = null;
+let routeEndMarker = null;
+let routePreviewMarkers = [];
+let lastRoute = null;
+let routePickMode = null;
+let routeRequestSeq = 0;
+
+function savedPinLabel(p){ return `${p.purpose} — ${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}`; }
+function routePointFromPin(p){ return {lat:Number(p.lat),lng:Number(p.lng),label:p.purpose,pinId:p.id}; }
+
+function ensureRouteFinderMap(){
+  if(routeFinderMap) return;
+  const el=document.getElementById('routeFinderMap');
+  if(!el || !window.L) return;
+  routeFinderMap=L.map(el,{zoomControl:true}).setView(INDIA_CENTER,INDIA_ZOOM);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap contributors'}).addTo(routeFinderMap);
+  routeFinderMap.on('click',e=>{
+    if(!routePickMode) return;
+    const point={lat:Number(e.latlng.lat.toFixed(6)),lng:Number(e.latlng.lng.toFixed(6)),
+      label:routePickMode==='start'?'Map pickup':'Map destination'};
+    if(routePickMode==='start'){
+      document.getElementById('manualStartLat').value=point.lat;
+      document.getElementById('manualStartLng').value=point.lng;
+      document.getElementById('routeStart').value='';
+      routeStatus(`Pickup set from map: ${point.lat.toFixed(5)}, ${point.lng.toFixed(5)}. Now choose a destination.`);
+    }else{
+      document.getElementById('manualEndLat').value=point.lat;
+      document.getElementById('manualEndLng').value=point.lng;
+      document.getElementById('routeEnd').value='';
+      routeStatus(`Destination set from map: ${point.lat.toFixed(5)}, ${point.lng.toFixed(5)}. Click Calculate route to continue.`);
+    }
+    drawTemporaryPoint(point);
+    routePickMode=null;
+    updateRoutePickButtons();
+  });
+  setTimeout(()=>routeFinderMap.invalidateSize(),100);
+}
+
+function drawTemporaryPoint(point){
+  if(!routeFinderMap) return;
+  const marker=L.circleMarker([point.lat,point.lng],{radius:7,color:'#2C4E39',weight:3,fillColor:'#E08E45',fillOpacity:.95})
+    .addTo(routeFinderMap).bindTooltip(point.label,{permanent:true,direction:'top',className:'route-marker-label'});
+  setTimeout(()=>marker.remove(),5000);
+}
+
+function updateRoutePickButtons(){
+  const a=document.getElementById('routePickStartBtn'), b=document.getElementById('routePickEndBtn');
+  if(a) a.textContent=routePickMode==='start'?'Click map to place pickup':'Pick start on map';
+  if(b) b.textContent=routePickMode==='end'?'Click map to place destination':'Pick destination on map';
+}
+
+function ensureRoutePreviewMap(){
+  if(routePreviewMap) return;
+  const el=document.getElementById('routePreviewMap');
+  if(!el || !window.L) return;
+  el.innerHTML='';
+  routePreviewMap=L.map(el,{zoomControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,keyboard:false}).setView(INDIA_CENTER,INDIA_ZOOM);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(routePreviewMap);
+  setTimeout(()=>routePreviewMap.invalidateSize(),100);
+}
+
+function fillRouteSelectors(){
+  const start=document.getElementById('routeStart'), end=document.getElementById('routeEnd');
+  if(!start || !end) return;
+  const pins=rescuePins.slice().sort((a,b)=>a.id-b.id);
+  const opts=pins.map(p=>`<option value="${p.id}">${escapeMapHtml(savedPinLabel(p))}</option>`).join('');
+  start.innerHTML = pins.length ? `<option value="">Choose pickup…</option>${opts}` : '<option value="">No saved locations</option>';
+  end.innerHTML = pins.length ? `<option value="">Choose destination…</option>${opts}` : '<option value="">No saved locations</option>';
+  if(pins.length>=2 && !start.value && !end.value){ start.value=String(pins[0].id); end.value=String(pins[1].id); }
+}
+
+function routeStatus(msg){ const el=document.getElementById('routeStatus'); if(el) el.textContent=msg; }
+
+function setRouteSummary(title,text,stats=null,steps=[]){
+  const el=document.getElementById('routeSummary'); if(!el) return;
+  const stepsHtml=steps.length ? `<div class="route-steps"><div class="route-steps-title">Turn-by-turn preview</div>${steps.slice(0,8).map((st,i)=>{
+    const instruction=st.maneuver?.instruction || st.name || 'Continue';
+    return `<div class="route-step"><span class="route-step-num">${i+1}</span><span>${escapeMapHtml(instruction)}${st.name?`<br><small>${escapeMapHtml(st.name)}</small>`:''}</span><span class="route-step-dist">${formatDistance(st.distance)}</span></div>`;
+  }).join('')}</div>` : '';
+  el.innerHTML=`<div class="route-summary-icon">⌖</div><div class="route-summary-title">${escapeMapHtml(title)}</div><div class="route-summary-text">${escapeMapHtml(text)}</div>`+
+    (stats?`<div class="route-stats"><div class="route-stat"><div class="v">${stats.distance}</div><div class="l">Road distance</div></div><div class="route-stat"><div class="v">${stats.duration}</div><div class="l">Estimated drive</div></div></div>`:'')+
+    stepsHtml+
+    `<div class="route-actions"><button class="btn" id="openGoogleMapsBtn" type="button" ${lastRoute?'':'disabled'}>Open navigation ↗</button><button class="btn ghost" id="clearRouteBtn" type="button">Clear route</button></div>`;
+  document.getElementById('openGoogleMapsBtn')?.addEventListener('click',openExternalNavigation);
+  document.getElementById('clearRouteBtn')?.addEventListener('click',clearRoute);
+}
+
+function clearRoute(){
+  if(routeLayer){routeLayer.remove();routeLayer=null;}
+  if(routeStartMarker){routeStartMarker.remove();routeStartMarker=null;}
+  if(routeEndMarker){routeEndMarker.remove();routeEndMarker=null;}
+  lastRoute=null;
+  routeStatus('Route cleared. Choose two locations and calculate again.');
+  setRouteSummary('Ready for a route','Your route distance and estimated driving time will appear here.');
+}
+
+function chooseRoutePoints(){
+  const sId=Number(document.getElementById('routeStart')?.value), eId=Number(document.getElementById('routeEnd')?.value);
+  const s=rescuePins.find(p=>p.id===sId), e=rescuePins.find(p=>p.id===eId);
+  if(s && e){
+    if(s.id===e.id) throw new Error('Pickup and destination must be different locations.');
+    return [routePointFromPin(s),routePointFromPin(e)];
+  }
+  const vals=['manualStartLat','manualStartLng','manualEndLat','manualEndLng'].map(id=>Number(document.getElementById(id)?.value));
+  if(vals.every(Number.isFinite)){
+    return [{lat:vals[0],lng:vals[1],label:'Custom pickup'},{lat:vals[2],lng:vals[3],label:'Custom destination'}];
+  }
+  throw new Error('Choose both saved locations, or enter/map-pick both coordinates.');
+}
+
+async function calculateRoadRoute(start,end){
+  const url=`https://router.project-osrm.org/route/v1/driving/${start.lng},${start.lat};${end.lng},${end.lat}?overview=full&geometries=geojson&steps=true&annotations=true`;
+  const controller=new AbortController(), timeout=setTimeout(()=>controller.abort(),15000);
+  try{
+    const r=await fetch(url,{signal:controller.signal});
+    if(!r.ok) throw new Error('Routing service is unavailable right now.');
+    const data=await r.json();
+    if(data.code!=='Ok' || !data.routes?.length) throw new Error('No drivable route was found between these points.');
+    return data.routes[0];
+  }catch(err){
+    if(err.name==='AbortError') throw new Error('Routing took too long. Please try again.');
+    throw err;
+  }finally{clearTimeout(timeout);}
+}
+
+function formatDuration(sec){
+  const mins=Math.max(1,Math.round(sec/60)); if(mins<60) return `${mins} min`;
+  const h=Math.floor(mins/60), m=mins%60; return m?`${h}h ${m}m`:`${h}h`;
+}
+function formatDistance(m){ return m>=1000 ? `${(m/1000).toFixed(1)} km` : `${Math.round(m)} m`; }
+
+function drawRouteOnMap(route,start,end){
+  ensureRouteFinderMap();
+  if(!routeFinderMap) return;
+  if(routeLayer) routeLayer.remove();
+  if(routeStartMarker) routeStartMarker.remove();
+  if(routeEndMarker) routeEndMarker.remove();
+  routeLayer=L.geoJSON(route.geometry,{style:{color:'#3E6B4F',weight:6,opacity:.9}}).addTo(routeFinderMap);
+  routeStartMarker=L.marker([start.lat,start.lng]).addTo(routeFinderMap).bindTooltip('Pickup',{permanent:true,direction:'top',className:'route-marker-label'});
+  routeEndMarker=L.marker([end.lat,end.lng]).addTo(routeFinderMap).bindTooltip('Drop-off',{permanent:true,direction:'top',className:'route-marker-label'});
+  routeFinderMap.fitBounds(routeLayer.getBounds(),{padding:[35,35],maxZoom:15});
+}
+
+function openExternalNavigation(){
+  if(!lastRoute) return;
+  const s=lastRoute.start,e=lastRoute.end;
+  window.open(`https://www.google.com/maps/dir/?api=1&origin=${s.lat},${s.lng}&destination=${e.lat},${e.lng}&travelmode=driving`,'_blank','noopener');
+}
+
+async function runSelectedRoute(){
+  const requestId=++routeRequestSeq;
+  try{
+    const [start,end]=chooseRoutePoints();
+    routeStatus('Finding the best available road route…');
+    const route=await calculateRoadRoute(start,end);
+    if(requestId!==routeRequestSeq) return;
+    lastRoute={route,start,end};
+    drawRouteOnMap(route,start,end);
+    const steps=(route.legs||[]).flatMap(l=>l.steps||[]);
+    setRouteSummary('Route ready',`${start.label} → ${end.label}`,{distance:formatDistance(route.distance),duration:formatDuration(route.duration)},steps);
+    routeStatus(`Route calculated: ${formatDistance(route.distance)} · ${formatDuration(route.duration)}. You can open turn-by-turn navigation or change either point.`);
+  }catch(err){routeStatus(err.message||'Could not calculate route.'); if(typeof toast==='function') toast(err.message||'Could not calculate route.');}
+}
+
+function useBrowserLocation(){
+  if(!navigator.geolocation){routeStatus('Your browser does not provide location access.');return;}
+  routeStatus('Requesting your location…');
+  navigator.geolocation.getCurrentPosition(pos=>{
+    const lat=pos.coords.latitude,lng=pos.coords.longitude;
+    document.getElementById('manualStartLat').value=lat.toFixed(6);
+    document.getElementById('manualStartLng').value=lng.toFixed(6);
+    document.getElementById('routeStart').value='';
+    routeStatus('Your location is set as pickup. Choose a destination or use the map picker, then calculate.');
+    ensureRouteFinderMap(); routeFinderMap?.setView([lat,lng],13);
+  },()=>routeStatus('Location access was blocked. You can enter coordinates manually instead.'),{enableHighAccuracy:true,timeout:10000});
+}
+
+async function runManualRoute(){
+  const vals=['manualStartLat','manualStartLng','manualEndLat','manualEndLng'].map(id=>Number(document.getElementById(id)?.value));
+  if(vals.some(v=>!Number.isFinite(v))){routeStatus('Enter or map-pick all four coordinates first.');return;}
+  const [slat,slng,elat,elng]=vals;
+  if(Math.abs(slat)>90||Math.abs(elat)>90||Math.abs(slng)>180||Math.abs(elng)>180){routeStatus('Please enter valid latitude/longitude values.');return;}
+  try{
+    routeStatus('Finding the road route…');
+    const start={lat:slat,lng:slng,label:'Custom pickup'},end={lat:elat,lng:elng,label:'Custom destination'};
+    const route=await calculateRoadRoute(start,end); lastRoute={route,start,end}; drawRouteOnMap(route,start,end);
+    setRouteSummary('Route ready','Custom pickup → custom destination',{distance:formatDistance(route.distance),duration:formatDuration(route.duration)},(route.legs||[]).flatMap(l=>l.steps||[]));
+    routeStatus('Custom road route calculated successfully.');
+  }catch(err){routeStatus(err.message||'Could not calculate route.');}
+}
+
+function swapRoutePoints(){
+  const s=document.getElementById('routeStart'), e=document.getElementById('routeEnd');
+  if(s && e && s.value && e.value){const tmp=s.value;s.value=e.value;e.value=tmp;runSelectedRoute();return;}
+  const vals=['manualStartLat','manualStartLng','manualEndLat','manualEndLng'].map(id=>document.getElementById(id)?.value||'');
+  ['manualStartLat','manualStartLng'].forEach((id,i)=>document.getElementById(id).value=vals[i+2]);
+  ['manualEndLat','manualEndLng'].forEach((id,i)=>document.getElementById(id).value=vals[i]);
+  runManualRoute();
+}
+
+function renderRoutePreview(){
+  ensureRoutePreviewMap();
+  const info=document.getElementById('routePreviewInfo'); if(!routePreviewMap||!info)return;
+  routePreviewMarkers.forEach(m=>m.remove());routePreviewMarkers=[];
+  if(routePreviewLayer){routePreviewLayer.remove();routePreviewLayer=null;}
+  const pins=rescuePins.slice().sort((a,b)=>a.id-b.id);
+  if(pins.length<2){
+    routePreviewMap.setView(INDIA_CENTER,INDIA_ZOOM);
+    info.innerHTML='<div class="route-mini-title">No route selected</div><div class="route-mini-text">Save at least two rescue locations on the India map. They will automatically appear here as pickup and drop-off points.</div>';
+    return;
+  }
+  const start=routePointFromPin(pins[0]),end=routePointFromPin(pins[1]);
+  routePreviewMarkers=[
+    L.marker([start.lat,start.lng]).addTo(routePreviewMap).bindTooltip('Pickup',{permanent:true,direction:'top',className:'route-marker-label'}),
+    L.marker([end.lat,end.lng]).addTo(routePreviewMap).bindTooltip('Drop-off',{permanent:true,direction:'top',className:'route-marker-label'})
+  ];
+  calculateRoadRoute(start,end).then(route=>{
+    routePreviewLayer=L.geoJSON(route.geometry,{style:{color:'#E08E45',weight:5,opacity:.9}}).addTo(routePreviewMap);
+    routePreviewMap.fitBounds(routePreviewLayer.getBounds(),{padding:[20,20]});
+    info.innerHTML=`<div class="route-mini-title">${escapeMapHtml(start.label)} → ${escapeMapHtml(end.label)}</div><div class="route-mini-text"><strong>${formatDistance(route.distance)}</strong> · about <strong>${formatDuration(route.duration)}</strong> by road.</div>`;
+  }).catch(()=>{
+    const group=L.featureGroup(routePreviewMarkers);routePreviewMap.fitBounds(group.getBounds(),{padding:[30,30]});
+    info.innerHTML=`<div class="route-mini-title">${escapeMapHtml(start.label)} → ${escapeMapHtml(end.label)}</div><div class="route-mini-text">Route preview is unavailable right now. Open the full finder to retry.</div>`;
+  });
+}
+
+function renderRouteFinder(){
+  ensureRouteFinderMap();fillRouteSelectors();renderRoutePreview();setTimeout(()=>routeFinderMap?.invalidateSize(),100);
+}
+
+document.getElementById('calculateRouteBtn')?.addEventListener('click',runSelectedRoute);
+document.getElementById('routeMyLocationBtn')?.addEventListener('click',useBrowserLocation);
+document.getElementById('manualRouteBtn')?.addEventListener('click',runManualRoute);
+document.getElementById('clearRouteBtn')?.addEventListener('click',clearRoute);
+document.getElementById('routeSwapBtn')?.addEventListener('click',swapRoutePoints);
+document.getElementById('routeFitIndiaBtn')?.addEventListener('click',()=>{ensureRouteFinderMap();routeFinderMap?.setView(INDIA_CENTER,INDIA_ZOOM);});
+document.getElementById('routePickStartBtn')?.addEventListener('click',()=>{routePickMode='start';updateRoutePickButtons();routeStatus('Click anywhere on the route map to set the pickup point.');});
+document.getElementById('routePickEndBtn')?.addEventListener('click',()=>{routePickMode='end';updateRoutePickButtons();routeStatus('Click anywhere on the route map to set the destination point.');});
+
+/* ============================================================
+   INIT
+   ============================================================ */
+const initialRoute = (location.hash||'').replace('#','') || 'dashboard';
+navigate(ROUTES[initialRoute] ? initialRoute : 'dashboard');
+initRescueMap();
+
+// Recalculate the map size whenever the dashboard becomes visible.
+document.querySelectorAll('[data-route], .nav-item, [href^="#"]').forEach(el => {
+  el.addEventListener('click', () => setTimeout(() => {
+    rescueMap && rescueMap.invalidateSize();
+    routeFinderMap && routeFinderMap.invalidateSize();
+    routePreviewMap && routePreviewMap.invalidateSize();
+  }, 200));
+});
+
+})();
+
+</script>
+</body>
+</html>
