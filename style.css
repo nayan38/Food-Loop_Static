@@ -1,0 +1,128 @@
+*{box-sizing:border-box}
+:root{--fg:#fff}
+html,body{height:100%;margin:0;overflow:hidden;background:#12082b}
+body{font-family:Quicksand,system-ui,sans-serif;color:var(--fg);transition:color .8s;-webkit-tap-highlight-color:transparent}
+body[data-mode=day]{--fg:#5a2f7d}
+h1,h2,p{margin:0}
+p{text-align:center;font-size:clamp(1rem,3.8vw,1.2rem);line-height:1.5}
+.soft{opacity:.75}
+.script{font:600 clamp(2.1rem,8.5vw,3.8rem)/1.15 'Dancing Script',cursive;text-align:center}
+body:not([data-mode=day]) .script{text-shadow:0 0 26px rgba(255,160,220,.55)}
+
+/* background layers */
+#bg{position:fixed;inset:-6%;translate:calc(var(--px,0)*-14px) calc(var(--py,0)*-14px);transition:filter .9s,translate .4s;
+ background:radial-gradient(60% 50% at 20% 20%,rgba(190,110,255,.45),transparent 70%),radial-gradient(50% 45% at 80% 75%,rgba(255,110,190,.35),transparent 70%),linear-gradient(#1a0f3d,#2b1457 60%,#0f1535)}
+#bg::after{content:"";position:absolute;inset:0;opacity:0;transition:opacity 1.2s;
+ background:radial-gradient(60% 50% at 25% 15%,#fff,transparent 70%),radial-gradient(55% 45% at 80% 80%,#ffd1e6,transparent 70%),linear-gradient(#fff0f6,#f4e6ff 55%,#ffe6f0)}
+body[data-mode=day] #bg::after{opacity:1}
+body[data-mode=dark] #bg{filter:brightness(.55) blur(2px)}
+body.blur #bg{filter:blur(5px) brightness(.85)}
+#fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:20}
+#flash{position:fixed;inset:0;z-index:15;pointer-events:none;opacity:0;transition:opacity .6s;background:radial-gradient(circle,rgba(255,225,245,.85),transparent 70%)}
+#flash.on{opacity:1;transition-duration:.1s}
+#music{position:fixed;top:calc(12px + env(safe-area-inset-top));right:12px;z-index:30;width:44px;height:44px;border-radius:50%;border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.18);backdrop-filter:blur(10px);color:#ff8fb8;font-size:1.2rem;cursor:pointer;opacity:.7}
+#music.on{opacity:1;animation:beat 1.2s ease-in-out infinite;box-shadow:0 0 18px rgba(255,143,184,.7)}
+
+/* scenes */
+main{position:fixed;inset:0;z-index:2}
+.scene{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;gap:1rem;padding:calc(3.2rem + env(safe-area-inset-top)) 1.2rem calc(1.5rem + env(safe-area-inset-bottom));overflow-y:auto;scrollbar-width:none;
+ opacity:0;visibility:hidden;pointer-events:none;scale:1.04;filter:blur(8px);transition:opacity .7s,scale .7s,filter .7s,visibility 0s .7s}
+.scene::-webkit-scrollbar{display:none}
+.scene::before,.scene::after{content:"";margin:auto}
+.scene.active{opacity:1;visibility:visible;pointer-events:auto;scale:1;filter:none;transition:opacity .7s,scale .7s,filter .7s,visibility 0s}
+.scene.leaving{opacity:0;scale:.97;filter:blur(10px);pointer-events:none}
+.rv{opacity:0;translate:0 24px;scale:.96;transition:opacity .9s cubic-bezier(.2,.8,.2,1) calc(var(--d,0)*1s),translate .9s cubic-bezier(.2,.8,.2,1) calc(var(--d,0)*1s),scale .9s cubic-bezier(.2,.8,.2,1) calc(var(--d,0)*1s)}
+.scene.active .rv{opacity:1;translate:0;scale:1}
+.pm{opacity:0;translate:0 14px;transition:opacity .9s,translate .9s;display:grid;gap:.4rem}
+.pm.in{opacity:1;translate:0}
+
+/* buttons */
+.btn{font:700 1rem Quicksand,sans-serif;min-height:50px;padding:.9rem 1.9rem;border:0;border-radius:999px;color:#fff;background:linear-gradient(135deg,#ff8fb8,#b58cff);box-shadow:0 8px 26px rgba(255,143,184,.45);cursor:pointer;transition:opacity .6s,translate .6s,transform .25s,box-shadow .3s}
+.btn:hover{transform:translateY(-2px) scale(1.04)}.btn:active{transform:scale(.96)}
+.btn.rv{transition:opacity .9s calc(var(--d,0)*1s),translate .9s calc(var(--d,0)*1s),scale .9s calc(var(--d,0)*1s),transform .25s}
+.btn.off{opacity:0;translate:0 12px;pointer-events:none}
+.glow{animation:glow 2s ease-in-out infinite}
+:focus-visible{outline:3px solid #ffd76b;outline-offset:3px}
+
+/* 1 intro heart */
+.t{opacity:0;transition:opacity 1.2s;font-size:clamp(1.1rem,4.5vw,1.4rem);letter-spacing:.02em}.t.in{opacity:1}
+.heart{width:min(44vw,170px);cursor:pointer;opacity:0;scale:.3;filter:drop-shadow(0 0 20px rgba(255,140,200,.75));transition:opacity .9s,scale .9s cubic-bezier(.3,1.5,.5,1)}
+.heart.in{opacity:1;scale:1;animation:beat 1.4s ease-in-out 1s infinite}
+.heart.go{animation:none;scale:2.2;opacity:0;filter:drop-shadow(0 0 60px #ff8fb8);transition:all 1s ease-in}
+
+/* 2 hero heart cluster */
+.tree{position:relative;width:min(72vw,330px);aspect-ratio:1;flex:none}
+.tree i{position:absolute;font-style:normal;translate:-50% -50%;animation:pop .8s cubic-bezier(.3,1.6,.5,1) var(--d) both,bob 3s ease-in-out calc(var(--d)*3) infinite alternate;text-shadow:0 2px 8px rgba(190,110,255,.3)}
+
+/* 3 cake */
+.cake{position:relative;width:min(230px,60vw);aspect-ratio:1/.9;margin-top:3.6rem;flex:none}
+.plate{position:absolute;bottom:-9px;left:-14%;right:-14%;height:16px;border-radius:50%;background:rgba(255,255,255,.85);box-shadow:0 6px 16px rgba(0,0,0,.25)}
+.layer{position:absolute;border-radius:16px 16px 12px 12px;box-shadow:0 8px 18px rgba(0,0,0,.2)}
+.layer::before{content:"";position:absolute;left:0;right:0;top:0;height:20px;border-radius:16px 16px 0 0;background:radial-gradient(circle at 50% 0,#fff8ef 9px,transparent 10px) 0 0/20px 20px repeat-x,linear-gradient(#fff8ef,#fff8ef) 0 0/100% 5px no-repeat}
+.l1{left:0;right:0;bottom:0;height:38%;background:linear-gradient(#ffc6dd,#ff9fc7)}
+.l2{left:12%;right:12%;bottom:34%;height:32%;background:linear-gradient(#e9dcff,#c2a5ff)}
+.candle{position:absolute;left:50%;bottom:64%;width:12px;height:38px;margin-left:-6px;border-radius:4px;background:repeating-linear-gradient(45deg,#fff 0 6px,#ffb3d1 6px 12px)}
+#flame{position:absolute;bottom:100%;left:50%;translate:-50% 0;width:64px;height:68px;padding:0 0 4px;border:0;background:none;display:flex;align-items:flex-end;justify-content:center;cursor:pointer}
+.flame{display:block;width:15px;height:26px;border-radius:50% 50% 50% 50%/62% 62% 38% 38%;background:radial-gradient(circle at 50% 70%,#fff8d6,#ffc93d 55%,#ff8a3d);box-shadow:0 0 22px 8px rgba(255,200,90,.55);transform-origin:50% 100%;animation:flick .18s ease-in-out infinite alternate;transition:opacity .25s,scale .25s}
+.out .flame{opacity:0;scale:0}.out #flame{pointer-events:none}
+.smoke{position:absolute;bottom:100%;left:50%;width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.7);filter:blur(4px);opacity:0;animation:smoke 2s ease-out both}
+#wishText{min-height:1.6em}
+
+/* 4 balloons */
+.field{display:grid;grid-template-columns:repeat(3,1fr);gap:1.4rem .4rem;width:min(94vw,520px);margin:.4rem 0}
+.slot{position:relative;display:grid;place-items:start center;height:clamp(120px,30vw,160px)}
+.balloon{position:relative;width:clamp(56px,17vw,84px);aspect-ratio:.82;padding:0;border:0;cursor:pointer;border-radius:50% 50% 48% 48%/58% 58% 42% 42%;
+ background:radial-gradient(circle at 32% 26%,rgba(255,255,255,.7),transparent 26%),var(--c);box-shadow:inset -8px -10px 18px rgba(0,0,0,.14),0 10px 22px rgba(0,0,0,.2);
+ animation:float var(--t,4s) ease-in-out var(--dl,0s) infinite alternate;transition:scale .25s}
+.balloon:hover{scale:1.08}.balloon:active{scale:.94}
+.balloon::before{content:"";position:absolute;left:50%;top:calc(100% - 2px);margin-left:-5px;border:0 solid transparent;border-width:0 5px 9px;border-bottom-color:var(--c)}
+.balloon::after{content:"";position:absolute;left:50%;top:calc(100% + 7px);width:1.5px;height:clamp(24px,7vw,40px);background:rgba(255,255,255,.45)}
+.slot.popped .balloon{animation:popb .35s ease-out forwards;pointer-events:none}
+.word{position:absolute;top:16%;left:0;right:0;text-align:center;font:600 clamp(1.15rem,4.6vw,1.5rem)/1.1 'Dancing Script',cursive;color:#ffd9ec;text-shadow:0 0 14px rgba(255,150,210,.8);opacity:0;scale:.5;transition:opacity .7s .25s,scale .7s .25s,translate .7s .25s;pointer-events:none}
+.popped .word{opacity:1;scale:1;translate:0 -6px}
+@media(min-width:760px){.field{grid-template-columns:repeat(6,1fr);width:min(92vw,820px)}.slot{height:150px}}
+
+/* 5 cards */
+.cards{display:flex;flex-direction:column;gap:1.2rem;width:min(92vw,440px);margin:.6rem 0 1rem;flex:none}
+.card{display:flex;gap:1rem;align-items:center;padding:1.6rem 1.3rem;border-radius:22px;cursor:pointer;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.22);backdrop-filter:blur(14px);box-shadow:0 12px 36px rgba(0,0,0,.25);
+ opacity:.18;filter:blur(9px);translate:0 40px;transform:perspective(700px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));transition:opacity .9s,filter .9s,translate .9s,transform .2s}
+.card.in{opacity:1;filter:none;translate:0}
+.card i{font-style:normal;font-size:1.7rem;color:#ff9ec7;text-shadow:0 0 14px rgba(255,150,200,.8)}
+.card p{text-align:left}
+
+/* 6 envelope */
+.env{position:relative;width:min(300px,78vw);aspect-ratio:3/2;margin:1.5rem 0;cursor:pointer;perspective:800px;flex:none;animation:bob 3s ease-in-out infinite alternate}
+.env>*{position:absolute}
+.eb{inset:0;border-radius:10px;background:#dcc6fb;box-shadow:0 18px 40px rgba(0,0,0,.35)}
+.el{left:8%;right:8%;top:6%;height:88%;z-index:2;display:grid;place-items:center;border-radius:6px;background:#fffaf0;box-shadow:0 4px 14px rgba(0,0,0,.15);color:#b0589a;font:600 1.4rem 'Dancing Script',cursive;transition:translate 1s cubic-bezier(.3,.8,.3,1) .5s}
+.ef{inset:0;z-index:3;border-radius:10px;clip-path:polygon(0 0,50% 58%,100% 0,100% 100%,0 100%);background:linear-gradient(#f6c0da,#e79cc4)}
+.flap{inset:0;z-index:4;clip-path:polygon(0 0,100% 0,50% 58%);background:linear-gradient(#ffd3e6,#f1a9cb);transform-origin:top;transition:transform .7s ease-in-out,z-index 0s .35s}
+.seal{left:50%;top:50%;translate:-50% -50%;z-index:5;color:#ff5f9a;font-size:1.5rem;transition:opacity .3s}
+.env.open .flap{transform:rotateX(180deg);z-index:1}
+.env.open .el{translate:0 -62%}.env.open .seal{opacity:0}
+
+/* 7 letter */
+.letter{position:relative;width:min(92vw,460px);max-height:68dvh;overflow-y:auto;padding:1.8rem 1.6rem;border-radius:18px;color:#4b2c63;background:linear-gradient(#fffdf6,#fff2e4);box-shadow:0 20px 60px rgba(0,0,0,.45),0 0 0 6px rgba(255,255,255,.1);scrollbar-width:thin;flex:none}
+.scene.active .letter{animation:lift 1s cubic-bezier(.2,.8,.2,1) both}
+.letter h2{font:600 clamp(2rem,8vw,2.6rem) 'Dancing Script',cursive;color:#c0508a;text-align:center}
+.letter small{display:block;text-align:center;opacity:.6;margin-top:.2rem}
+.letter p{text-align:left;margin:.9rem 0;font-size:clamp(.95rem,3.4vw,1.08rem);line-height:1.7}
+.letter .sig{text-align:right;font:600 1.6rem 'Dancing Script',cursive;color:#b0589a}
+
+/* 8 finale */
+.sky{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.sky .rise{position:absolute;bottom:-150px;left:var(--l);animation:rise 7s linear forwards;pointer-events:none;opacity:.9}
+
+@keyframes beat{50%{transform:scale(1.1)}}
+@keyframes glow{50%{box-shadow:0 0 34px 8px rgba(255,160,210,.75)}}
+@keyframes flick{to{transform:scale(1.08,.92) rotate(3deg)}}
+@keyframes pop{from{scale:0;opacity:0}to{scale:1;opacity:1}}
+@keyframes bob{from{translate:-50% -4px}to{translate:-50% 5px}}
+@keyframes float{from{translate:0 -8px;rotate:calc(var(--rt,4deg)*-1)}to{translate:0 8px;rotate:var(--rt,4deg)}}
+@keyframes popb{40%{scale:1.3}to{scale:1.8;opacity:0}}
+@keyframes smoke{0%{opacity:0;translate:0 0;scale:.5}25%{opacity:.7}100%{opacity:0;translate:var(--dx) -80px;scale:3}}
+@keyframes lift{from{opacity:0;translate:0 60px;scale:.9}}
+@keyframes rise{to{translate:0 -125vh}}
+.env{--k:0}@keyframes envbob{from{translate:0 -4px}to{translate:0 5px}}
+.env{animation-name:envbob}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important}}
